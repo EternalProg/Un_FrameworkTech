@@ -4,36 +4,30 @@ const fs = require("node:fs");
 let env = {};
 try {
   const file = fs.readFileSync(".env", "utf8");
-  file.split("\n").forEach(line => {
-    const [key, value] = line.split("=");
-    if (key) env[key.trim()] = value?.trim();
+  file.split("\n").forEach((line) => {
+    const [k, v] = line.split("=");
+    if (k) env[k.trim()] = v?.trim();
   });
-} catch {
-  console.log(".env not found, using defaults");
-}
+} catch {}
 
 const PORT = env.PORT || 3000;
 const HOSTNAME = env.HOSTNAME || "127.0.0.1";
 
-let MENU = [
-  { id: 1, name: "Піца Гуцульська", category: "Піца", price: 250, available: true },
-  { id: 2, name: "Борщ", category: "Супи", price: 120, available: true },
-  { id: 3, name: "Чизкейк", category: "Десерти", price: 150, available: false },
-];
+let DEVICES = [{ id: 1, device: "Smart Lamp", status: "on", room: "Kitchen" }];
 
-function readBody(req, callback) {
+/* --- читання body --- */
+function readBody(req, cb) {
   let body = "";
-  req.on("data", chunk => body += chunk.toString());
+  req.on("data", (chunk) => (body += chunk.toString()));
   req.on("end", () => {
     try {
-      callback(null, body ? JSON.parse(body) : {});
+      cb(null, body ? JSON.parse(body) : {});
     } catch {
-      callback("Invalid JSON");
+      cb("Invalid JSON");
     }
   });
 }
 
-/* --- Сервер --- */
 const server = createServer((req, res) => {
   const method = req.method;
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -42,53 +36,56 @@ const server = createServer((req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
 
   /* ================= GET ================= */
-  if (method === "GET" && pathname === "/menu") {
-    const category = parsedUrl.searchParams.get("category");
+  if (method === "GET" && pathname === "/devices") {
+    const room = parsedUrl.searchParams.get("room");
 
-    let results = [...MENU];
-    if (category) {
-      results = results.filter(
-        d => d.category.toLowerCase() === category.toLowerCase()
+    let result = [...DEVICES];
+    if (room) {
+      result = result.filter(
+        (d) => d.room.toLowerCase() === room.toLowerCase()
       );
     }
 
     res.statusCode = 200;
-    return res.end(JSON.stringify({ count: results.length, items: results }));
+    return res.end(
+      JSON.stringify({ count: result.length, items: result }, null, 2)
+    );
   }
 
   /* ================= POST ================= */
-  if (method === "POST" && pathname === "/menu") {
+  if (method === "POST" && pathname === "/devices") {
     return readBody(req, (err, data) => {
       if (err) {
         res.statusCode = 400;
         return res.end(JSON.stringify({ error: err }));
       }
 
-      /* Валідація */
-      if (!data.name || typeof data.price !== "number") {
+      /* валідація */
+      if (!data.device || !data.room) {
         res.statusCode = 400;
-        return res.end(JSON.stringify({ error: "name(string) and price(number) required" }));
+        return res.end(JSON.stringify({ error: "device and room required" }));
       }
 
-      const nextId = MENU.length ? MENU[MENU.length - 1].id + 1 : 1;
+      const nextId = DEVICES.length ? DEVICES[DEVICES.length - 1].id + 1 : 1;
 
-      const dish = {
+      const newDevice = {
         id: nextId,
-        name: data.name,
-        category: data.category || "Інше",
-        price: data.price,
-        available: data.available ?? true,
+        device: data.device,
+        status: data.status || "off",
+        room: data.room,
       };
 
-      MENU.push(dish);
+      DEVICES.push(newDevice);
 
       res.statusCode = 201;
-      res.end(JSON.stringify({ message: "Created", dish }));
+      res.end(
+        JSON.stringify({ message: "Device added", device: newDevice }, null, 2)
+      );
     });
   }
 
-  /* ================= PUT (повна заміна) ================= */
-  if (method === "PUT" && pathname.startsWith("/menu/")) {
+  /* ================= PATCH ================= */
+  if (method === "PATCH" && pathname.startsWith("/devices/")) {
     const id = Number(pathname.split("/")[2]);
 
     return readBody(req, (err, data) => {
@@ -97,58 +94,37 @@ const server = createServer((req, res) => {
         return res.end(JSON.stringify({ error: err }));
       }
 
-      const index = MENU.findIndex(d => d.id === id);
-      if (index === -1) {
+      const device = DEVICES.find((d) => d.id === id);
+      if (!device) {
         res.statusCode = 404;
-        return res.end(JSON.stringify({ error: "Not found" }));
+        return res.end(JSON.stringify({ error: "Device not found" }));
       }
 
-      /* Валідація */
-      if (!data.name || typeof data.price !== "number") {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ error: "name and price required" }));
-      }
+      /* заборона змінювати id */
+      if (data.id) delete data.id;
 
-      MENU[index] = {
-        id,
-        name: data.name,
-        category: data.category || "Інше",
-        price: data.price,
-        available: data.available ?? true,
-      };
+      Object.assign(device, data);
 
       res.statusCode = 200;
-      res.end(JSON.stringify({ message: "Replaced", dish: MENU[index] }));
+      res.end(JSON.stringify({ message: "Device updated", device }, null, 2));
     });
   }
 
-  /* ================= PATCH (часткове оновлення) ================= */
-  if (method === "PATCH" && pathname.startsWith("/menu/")) {
+  /* ================= DELETE ================= */
+  if (method === "DELETE" && pathname.startsWith("/devices/")) {
     const id = Number(pathname.split("/")[2]);
+    const initialLength = DEVICES.length;
 
-    return readBody(req, (err, data) => {
-      if (err) {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ error: err }));
-      }
+    DEVICES = DEVICES.filter((d) => d.id !== id);
 
-      const dish = MENU.find(d => d.id === id);
-      if (!dish) {
-        res.statusCode = 404;
-        return res.end(JSON.stringify({ error: "Not found" }));
-      }
+    if (DEVICES.length === initialLength) {
+      res.statusCode = 404;
+      return res.end(JSON.stringify({ error: "Device not found" }));
+    }
 
-      /* Валідація */
-      if (data.price && typeof data.price !== "number") {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ error: "price must be number" }));
-      }
-
-      Object.assign(dish, data);
-
-      res.statusCode = 200;
-      res.end(JSON.stringify({ message: "Patched", dish }));
-    });
+    res.statusCode = 200;
+    res.end(JSON.stringify({ message: "Device removed" }, null, 2));
+    return;
   }
 
   /* ================= 404 ================= */
@@ -156,7 +132,6 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify({ error: "Route not found" }));
 });
 
-/* --- Запуск сервера --- */
 server.listen(PORT, HOSTNAME, () => {
-  console.log(`Server running at http://${HOSTNAME}:${PORT}/`);
+  console.log(`Server running at http://${HOSTNAME}:${PORT}`);
 });
