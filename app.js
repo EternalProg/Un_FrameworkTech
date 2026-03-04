@@ -63,6 +63,12 @@ const server = createServer((req, res) => {
     );
   }
 
+  /* ================= 5xx ================= */
+  if (method === "GET" && pathname === "/error") {
+    res.statusCode = 500;
+    return res.end(JSON.stringify({ error: "Internal Server Error" }));
+  }
+
   /* ================= GET ================= */
   if (method === "GET" && pathname === "/devices") {
     const room = parsedUrl.searchParams.get("room");
