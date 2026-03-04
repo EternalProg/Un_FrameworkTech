@@ -1,21 +1,8 @@
 const { createServer } = require("node:http");
-const fs = require("node:fs");
-
-let env = {};
-try {
-  const file = fs.readFileSync(".env", "utf8");
-  file.split("\n").forEach((line) => {
-    const [k, v] = line.split("=");
-    if (k) env[k.trim()] = v?.trim();
-  });
-} catch {}
-
-const PORT = env.PORT || 3000;
-const HOSTNAME = env.HOSTNAME || "127.0.0.1";
+const config = require("./config");
 
 let DEVICES = [{ id: 1, device: "Smart Lamp", status: "on", room: "Kitchen" }];
 
-/* --- читання body --- */
 function readBody(req, cb) {
   let body = "";
   req.on("data", (chunk) => (body += chunk.toString()));
@@ -28,12 +15,53 @@ function readBody(req, cb) {
   });
 }
 
+function shouldLog(statusCode) {
+  if (config.NODE_ENV === "development") return true;
+  return statusCode >= 400;
+}
+
+function getLogLevel(statusCode) {
+  if (statusCode >= 500) return "ERROR";
+  if (statusCode >= 400) return "WARN";
+  return "INFO";
+}
+
+function logRequest(method, pathname, statusCode) {
+  if (!shouldLog(statusCode)) return;
+  const timestamp = new Date().toISOString();
+  const level = getLogLevel(statusCode);
+  const logLine = `${timestamp} | ${level} | ${method} | ${pathname} | ${statusCode}`;
+  console.log(logLine);
+}
+
 const server = createServer((req, res) => {
   const method = req.method;
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = parsedUrl.pathname;
 
   res.setHeader("Content-Type", "application/json; charset=utf-8");
+
+  res.on("finish", () => {
+    logRequest(method, pathname, res.statusCode);
+  });
+
+  // HEALTH
+  if (method === "GET" && pathname === "/health") {
+    res.statusCode = 200;
+    return res.end(
+      JSON.stringify(
+        {
+          pid: process.pid,
+          nodeVersion: process.version,
+          platform: process.platform,
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+        },
+        null,
+        2
+      )
+    );
+  }
 
   /* ================= GET ================= */
   if (method === "GET" && pathname === "/devices") {
@@ -132,6 +160,45 @@ const server = createServer((req, res) => {
   res.end(JSON.stringify({ error: "Route not found" }));
 });
 
-server.listen(PORT, HOSTNAME, () => {
-  console.log(`Server running at http://${HOSTNAME}:${PORT}`);
+server.listen(config.PORT, config.HOSTNAME, () => {
+  console.log(`Server running at http://${config.HOSTNAME}:${config.PORT}`);
+});
+
+const SHUTDOWN_TIMEOUT_MS = 10000;
+let isShuttingDown = false;
+
+function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`Received ${signal}. Shutting down...`);
+
+  // Якщо сервер не встиг закритися за цей час - завершити процес примусово.
+  const shutdownTimer = setTimeout(() => {
+    console.error("Shutdown timeout exceeded. Forcing exit.");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  // Після закриття завершити процес, а у випадку помилки завершити з іншим кодом.
+  server.close((err) => {
+    clearTimeout(shutdownTimer);
+    if (err) {
+      console.error("Error during server shutdown:", err);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+}
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+  gracefulShutdown("uncaughtException");
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+  gracefulShutdown("unhandledRejection");
 });
