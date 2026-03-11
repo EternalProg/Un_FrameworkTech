@@ -1,5 +1,3 @@
-const fp = require('fastify-plugin');
-
 const errorHandlerPlugin = async (fastify, options) => {
   fastify.setErrorHandler((error, request, reply) => {
     request.log.error(error);
@@ -10,4 +8,4 @@ const errorHandlerPlugin = async (fastify, options) => {
   });
 };
 
-module.exports = fp(errorHandlerPlugin);
+module.exports = errorHandlerPlugin;

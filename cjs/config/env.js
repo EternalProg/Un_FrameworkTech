@@ -21,8 +21,11 @@ if (!validate(process.env)) {
   console.warn('Errors:', ajv.errorsText(validate.errors));
 }
 
+const parsedPort = Number.parseInt(process.env.PORT ?? '8080', 10);
+const port = Number.isNaN(parsedPort) ? 8080 : parsedPort;
+
 module.exports = {
-  port: process.env.PORT || '8080',
+  port,
   host: process.env.HOST || '0.0.0.0',
   env: process.env.NODE_ENV || 'production'
 };
