@@ -1,20 +1,20 @@
 module.exports = {
-  type: "object",
+  type: 'object',
   properties: {
     PORT: {
-      type: "integer",
+      type: 'integer',
       minimum: 1,
       maximum: 65535,
     },
     HOSTNAME: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
     NODE_ENV: {
-      type: "string",
-      enum: ["development", "production"],
+      type: 'string',
+      enum: ['development', 'production'],
     },
   },
-  required: ["PORT", "HOSTNAME", "NODE_ENV"],
+  required: ['PORT', 'HOSTNAME', 'NODE_ENV'],
   additionalProperties: false,
 };

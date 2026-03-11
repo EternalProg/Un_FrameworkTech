@@ -1,8 +1,8 @@
 const deviceQuerySchema = {
-  type: "object",
+  type: 'object',
   properties: {
     room: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
   },
@@ -10,39 +10,39 @@ const deviceQuerySchema = {
 };
 
 const deviceCreateSchema = {
-  type: "object",
+  type: 'object',
   properties: {
     device: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
     room: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
     status: {
-      type: "string",
-      enum: ["on", "off"],
+      type: 'string',
+      enum: ['on', 'off'],
     },
   },
-  required: ["device", "room"],
+  required: ['device', 'room'],
   additionalProperties: false,
 };
 
 const deviceUpdateSchema = {
-  type: "object",
+  type: 'object',
   properties: {
     device: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
     room: {
-      type: "string",
+      type: 'string',
       minLength: 1,
     },
     status: {
-      type: "string",
-      enum: ["on", "off"],
+      type: 'string',
+      enum: ['on', 'off'],
     },
   },
   minProperties: 1,
@@ -50,14 +50,14 @@ const deviceUpdateSchema = {
 };
 
 const deviceParamsSchema = {
-  type: "object",
+  type: 'object',
   properties: {
     id: {
-      type: "integer",
+      type: 'integer',
       minimum: 1,
     },
   },
-  required: ["id"],
+  required: ['id'],
   additionalProperties: false,
 };
 
