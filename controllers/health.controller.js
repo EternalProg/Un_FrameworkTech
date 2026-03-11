@@ -1,4 +1,4 @@
-const { sendJson } = require('#utils/response');
+import { sendJson } from '#utils/response';
 
 function getHealth({ res }) {
   sendJson(res, 200, {
@@ -10,6 +10,4 @@ function getHealth({ res }) {
   });
 }
 
-module.exports = {
-  getHealth,
-};
+export { getHealth };

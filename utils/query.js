@@ -8,6 +8,4 @@ function buildQuery(searchParams) {
   return query;
 }
 
-module.exports = {
-  buildQuery,
-};
+export { buildQuery };

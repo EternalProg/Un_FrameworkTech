@@ -1,4 +1,4 @@
-const { getHealth } = require('#controllers/health.controller');
+import { getHealth } from '#controllers/health.controller';
 
 function handleHealthRoutes(ctx) {
   if (ctx.method === 'GET' && ctx.pathname === '/health') {
@@ -9,6 +9,4 @@ function handleHealthRoutes(ctx) {
   return false;
 }
 
-module.exports = {
-  handleHealthRoutes,
-};
+export { handleHealthRoutes };

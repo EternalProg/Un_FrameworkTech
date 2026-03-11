@@ -1,13 +1,13 @@
-const { readBody } = require('#utils/body');
-const { sendJson, sendError } = require('#utils/response');
-const { createValidator, formatAjvErrors } = require('#utils/validation');
-const {
+import { readBody } from '#utils/body';
+import { sendJson, sendError } from '#utils/response';
+import { createValidator, formatAjvErrors } from '#utils/validation';
+import {
   deviceQuerySchema,
   deviceCreateSchema,
   deviceUpdateSchema,
   deviceParamsSchema,
-} = require('#validators/device.schema');
-const deviceService = require('#services/device.service');
+} from '#validators/device.schema';
+import * as deviceService from '#services/device.service';
 
 const validateDeviceQuery = createValidator(deviceQuerySchema);
 const validateDeviceCreate = createValidator(deviceCreateSchema);
@@ -76,9 +76,4 @@ function deleteDevice({ res, params }) {
   sendJson(res, 200, { message: 'Device removed' });
 }
 
-module.exports = {
-  listDevices,
-  createDevice,
-  updateDevice,
-  deleteDevice,
-};
+export { listDevices, createDevice, updateDevice, deleteDevice };

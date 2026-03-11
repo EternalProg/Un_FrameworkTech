@@ -61,9 +61,4 @@ const deviceParamsSchema = {
   additionalProperties: false,
 };
 
-module.exports = {
-  deviceQuerySchema,
-  deviceCreateSchema,
-  deviceUpdateSchema,
-  deviceParamsSchema,
-};
+export { deviceQuerySchema, deviceCreateSchema, deviceUpdateSchema, deviceParamsSchema };

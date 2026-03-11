@@ -13,7 +13,4 @@ function sendError(res, statusCode, message, details) {
   sendJson(res, statusCode, payload);
 }
 
-module.exports = {
-  sendJson,
-  sendError,
-};
+export { sendJson, sendError };

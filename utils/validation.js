@@ -1,4 +1,4 @@
-const Ajv = require('ajv');
+import Ajv from 'ajv';
 
 const ajv = new Ajv({ allErrors: true, coerceTypes: true });
 
@@ -25,7 +25,4 @@ function formatAjvErrors(errors = []) {
   });
 }
 
-module.exports = {
-  createValidator,
-  formatAjvErrors,
-};
+export { createValidator, formatAjvErrors };

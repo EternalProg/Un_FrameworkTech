@@ -1,4 +1,4 @@
-const devices = require('#data/devices.data');
+import devices from '#data/devices.data';
 
 function listDevices(query = {}) {
   let result = [...devices];
@@ -40,9 +40,4 @@ function removeDevice(id) {
   return true;
 }
 
-module.exports = {
-  listDevices,
-  addDevice,
-  updateDevice,
-  removeDevice,
-};
+export { listDevices, addDevice, updateDevice, removeDevice };

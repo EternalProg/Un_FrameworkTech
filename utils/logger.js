@@ -1,4 +1,4 @@
-const config = require('#config');
+import config from '#config';
 
 function shouldLog(statusCode) {
   if (config.NODE_ENV === 'development') return true;
@@ -19,6 +19,4 @@ function logRequest(method, pathname, statusCode) {
   console.log(logLine);
 }
 
-module.exports = {
-  logRequest,
-};
+export { logRequest };

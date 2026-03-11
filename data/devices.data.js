@@ -1,1 +1,1 @@
-module.exports = [{ id: 1, device: 'Smart Lamp', status: 'on', room: 'Kitchen' }];
+export default [{ id: 1, device: 'Smart Lamp', status: 'on', room: 'Kitchen' }];

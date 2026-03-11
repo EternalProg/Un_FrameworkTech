@@ -1,4 +1,4 @@
-const { getError } = require('#controllers/error.controller');
+import { getError } from '#controllers/error.controller';
 
 function handleErrorRoutes(ctx) {
   if (ctx.method === 'GET' && ctx.pathname === '/error') {
@@ -9,6 +9,4 @@ function handleErrorRoutes(ctx) {
   return false;
 }
 
-module.exports = {
-  handleErrorRoutes,
-};
+export { handleErrorRoutes };

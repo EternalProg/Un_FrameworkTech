@@ -1,10 +1,10 @@
-module.exports = [
+export default [
   {
     files: ['**/*.js'],
     ignores: ['node_modules/**'],
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
         console: 'readonly',
         process: 'readonly',

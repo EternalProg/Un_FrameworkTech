@@ -1,10 +1,10 @@
-const { createServer } = require('node:http');
-const config = require('#config');
-const { handleHealthRoutes } = require('#routes/health.routes');
-const { handleErrorRoutes } = require('#routes/error.routes');
-const { handleDeviceRoutes } = require('#routes/device.routes');
-const { logRequest } = require('#utils/logger');
-const { sendError } = require('#utils/response');
+import { createServer } from 'node:http';
+import config from '#config';
+import { handleHealthRoutes } from '#routes/health.routes';
+import { handleErrorRoutes } from '#routes/error.routes';
+import { handleDeviceRoutes } from '#routes/device.routes';
+import { logRequest } from '#utils/logger';
+import { sendError } from '#utils/response';
 
 const server = createServer((req, res) => {
   const method = req.method;

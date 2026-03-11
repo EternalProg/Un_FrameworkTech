@@ -1,9 +1,7 @@
-const { sendError } = require('#utils/response');
+import { sendError } from '#utils/response';
 
 function getError({ res }) {
   sendError(res, 500, 'Internal Server Error');
 }
 
-module.exports = {
-  getError,
-};
+export { getError };

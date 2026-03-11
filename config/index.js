@@ -1,7 +1,7 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const envSchema = require('#validators/env.schema');
-const { createValidator, formatAjvErrors } = require('#utils/validation');
+import fs from 'node:fs';
+import path from 'node:path';
+import envSchema from '#validators/env.schema';
+import { createValidator, formatAjvErrors } from '#utils/validation';
 
 function loadEnvFile() {
   const envPath = path.resolve(process.cwd(), '.env.example');
@@ -42,8 +42,10 @@ if (!validateEnv(env)) {
   process.exit(1);
 }
 
-module.exports = {
+const config = {
   PORT: env.PORT,
   HOSTNAME: env.HOSTNAME,
   NODE_ENV: env.NODE_ENV,
 };
+
+export default config;

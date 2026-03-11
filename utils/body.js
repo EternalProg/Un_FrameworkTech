@@ -14,6 +14,4 @@ function readBody(req, cb) {
   });
 }
 
-module.exports = {
-  readBody,
-};
+export { readBody };

@@ -1,10 +1,10 @@
-const { buildQuery } = require('#utils/query');
-const {
+import { buildQuery } from '#utils/query';
+import {
   listDevices,
   createDevice,
   updateDevice,
   deleteDevice,
-} = require('#controllers/device.controller');
+} from '#controllers/device.controller';
 
 function handleDeviceRoutes(ctx) {
   const { method, pathname, parsedUrl } = ctx;
@@ -35,6 +35,4 @@ function handleDeviceRoutes(ctx) {
   return false;
 }
 
-module.exports = {
-  handleDeviceRoutes,
-};
+export { handleDeviceRoutes };
