@@ -20,9 +20,7 @@
     "#data/*": "./data/*.js",
     "#routes/*": "./routes/*.js",
     "#schemas/*": "./schemas/*.js",
-    "#services/*": "./services/*.js",
-    "#utils/*": "./utils/*.js",
-    "#validators/*": "./validators/*.js"
+    "#services/*": "./services/*.js"
   },
   "devDependencies": {
     "eslint": "^10.0.3",
@@ -31,7 +29,6 @@
   },
   "dependencies": {
     "@fastify/env": "^5.0.3",
-    "ajv": "^8.18.0",
     "fastify": "^5.8.2"
   }
 }

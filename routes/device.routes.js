@@ -4,12 +4,21 @@ import {
   updateDevice,
   deleteDevice,
 } from '#controllers/device.controller';
+import {
+  createDeviceRouteSchema,
+  deleteDeviceRouteSchema,
+  listDevicesRouteSchema,
+  updateDeviceRouteSchema,
+} from '#schemas/device.schema';
 
 async function registerDeviceRoutes(fastify) {
-  fastify.get('/devices', listDevices);
-  fastify.post('/devices', createDevice);
-  fastify.patch('/devices/:id', updateDevice);
-  fastify.delete('/devices/:id', deleteDevice);
+  fastify.get('/devices', { schema: listDevicesRouteSchema }, listDevices);
+
+  fastify.post('/devices', { schema: createDeviceRouteSchema }, createDevice);
+
+  fastify.patch('/devices/:id', { schema: updateDeviceRouteSchema }, updateDevice);
+
+  fastify.delete('/devices/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
 }
 
 export { registerDeviceRoutes };
