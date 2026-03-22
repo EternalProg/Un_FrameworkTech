@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
+import fastifyCors from '@fastify/cors';
 import fastifyEnv from '@fastify/env';
+import fastifyHelmet from '@fastify/helmet';
 import fastifySensible from '@fastify/sensible';
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { errorHandler } from '#controllers/error.controller';
@@ -38,7 +40,16 @@ async function loadConfig() {
   return config;
 }
 
+function resolveCorsOrigin(config) {
+  if (config.NODE_ENV === 'development') {
+    return '*';
+  }
+
+  return config.CORS_ORIGIN;
+}
+
 const SHUTDOWN_TIMEOUT_MS = 10000;
+const CORS_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'];
 const config = await loadConfig();
 
 const fastify = Fastify({
@@ -48,6 +59,11 @@ const fastify = Fastify({
 fastify.decorate('config', config);
 
 await fastify.register(fastifySensible);
+await fastify.register(fastifyCors, {
+  origin: resolveCorsOrigin(config),
+  methods: CORS_METHODS,
+});
+await fastify.register(fastifyHelmet, { global: true });
 
 fastify.addHook('onClose', async (instance) => {
   instance.log.info('Fastify server has been closed');

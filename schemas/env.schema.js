@@ -1,6 +1,6 @@
 const envSchema = {
   type: 'object',
-  required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'ADMIN_API_KEY'],
+  required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'ADMIN_API_KEY', 'CORS_ORIGIN'],
   properties: {
     PORT: {
       type: 'integer',
@@ -22,6 +22,11 @@ const envSchema = {
       type: 'string',
       minLength: 8,
       default: 'change-me-please',
+    },
+    CORS_ORIGIN: {
+      type: 'string',
+      minLength: 1,
+      default: 'https://api.example.com',
     },
   },
 };
