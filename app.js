@@ -5,6 +5,19 @@ import { registerErrorRoutes } from '#routes/error.routes';
 import { registerHealthRoutes } from '#routes/health.routes';
 import envSchema from '#schemas/env.schema';
 
+function buildLoggerOptions(nodeEnv) {
+  if (nodeEnv === 'production') {
+    return { level: 'error' };
+  }
+
+  return {
+    level: 'info',
+    transport: {
+      target: 'pino-pretty',
+    },
+  };
+}
+
 async function loadConfig() {
   const bootstrap = Fastify({ logger: false });
 
@@ -25,12 +38,14 @@ async function loadConfig() {
 const SHUTDOWN_TIMEOUT_MS = 10000;
 const config = await loadConfig();
 
-const fastify = Fastify();
+const fastify = Fastify({
+  logger: buildLoggerOptions(config.NODE_ENV),
+});
 
 fastify.decorate('config', config);
 
-fastify.addHook('onClose', async () => {
-  console.log('Fastify server has been closed');
+fastify.addHook('onClose', async (instance) => {
+  instance.log.info('Fastify server has been closed');
 });
 
 fastify.setNotFoundHandler((_request, reply) => {
@@ -47,9 +62,9 @@ try {
     host: fastify.config.HOSTNAME,
   });
 
-  console.log(`Server running at http://${fastify.config.HOSTNAME}:${fastify.config.PORT}`);
+  fastify.log.info(`Server running at http://${fastify.config.HOSTNAME}:${fastify.config.PORT}`);
 } catch (error) {
-  console.error('Unable to start server:', error);
+  fastify.log.error({ err: error }, 'Unable to start server');
   process.exit(1);
 }
 
@@ -62,10 +77,10 @@ function gracefulShutdown(signal) {
 
   isShuttingDown = true;
 
-  console.log(`Received ${signal}. Shutting down...`);
+  fastify.log.info({ signal }, 'Shutdown signal received');
 
   const shutdownTimer = setTimeout(() => {
-    console.error('Shutdown timeout exceeded. Forcing exit.');
+    fastify.log.error('Shutdown timeout exceeded. Forcing exit.');
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
 
@@ -77,7 +92,7 @@ function gracefulShutdown(signal) {
     })
     .catch((error) => {
       clearTimeout(shutdownTimer);
-      console.error('Error during server shutdown:', error);
+      fastify.log.error({ err: error }, 'Error during server shutdown');
       process.exit(1);
     });
 }
@@ -86,11 +101,11 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught exception:', error);
+  fastify.log.error({ err: error }, 'Uncaught exception');
   gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled rejection:', reason);
+  fastify.log.error({ reason }, 'Unhandled rejection');
   gracefulShutdown('unhandledRejection');
 });
