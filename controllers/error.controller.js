@@ -1,7 +1,5 @@
-import { sendError } from '#utils/response';
-
-function getError({ res }) {
-  sendError(res, 500, 'Internal Server Error');
+function getError(_request, reply) {
+  return reply.code(500).send({ error: 'Internal Server Error' });
 }
 
 export { getError };

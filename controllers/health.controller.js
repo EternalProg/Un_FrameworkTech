@@ -1,7 +1,5 @@
-import { sendJson } from '#utils/response';
-
-function getHealth({ res }) {
-  sendJson(res, 200, {
+function getHealth(_request, reply) {
+  return reply.send({
     pid: process.pid,
     nodeVersion: process.version,
     platform: process.platform,

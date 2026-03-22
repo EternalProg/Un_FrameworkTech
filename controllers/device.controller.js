@@ -1,5 +1,3 @@
-import { readBody } from '#utils/body';
-import { sendJson, sendError } from '#utils/response';
 import { createValidator, formatAjvErrors } from '#utils/validation';
 import {
   deviceQuerySchema,
@@ -14,66 +12,59 @@ const validateDeviceCreate = createValidator(deviceCreateSchema);
 const validateDeviceUpdate = createValidator(deviceUpdateSchema);
 const validateDeviceParams = createValidator(deviceParamsSchema);
 
-function validateOrRespond(res, validate, data) {
+function validateOrRespond(reply, validate, data) {
   const isValid = validate(data);
   if (isValid) return true;
 
-  sendError(res, 400, 'Validation error', formatAjvErrors(validate.errors));
+  reply.code(400).send({
+    error: 'Validation error',
+    details: formatAjvErrors(validate.errors),
+  });
+
   return false;
 }
 
-function listDevices({ res, query }) {
-  if (!validateOrRespond(res, validateDeviceQuery, query)) return;
+function listDevices(request, reply) {
+  const query = { ...request.query };
+  if (!validateOrRespond(reply, validateDeviceQuery, query)) return;
 
   const items = deviceService.listDevices(query);
-  sendJson(res, 200, { count: items.length, items });
+  return reply.send({ count: items.length, items });
 }
 
-function createDevice({ req, res }) {
-  readBody(req, (err, data) => {
-    if (err) {
-      sendError(res, 400, err);
-      return;
-    }
+function createDevice(request, reply) {
+  const data = request.body || {};
+  if (!validateOrRespond(reply, validateDeviceCreate, data)) return;
 
-    if (!validateOrRespond(res, validateDeviceCreate, data)) return;
-
-    const device = deviceService.addDevice(data);
-    sendJson(res, 201, { message: 'Device added', device });
-  });
+  const device = deviceService.addDevice(data);
+  return reply.code(201).send({ message: 'Device added', device });
 }
 
-function updateDevice({ req, res, params }) {
-  if (!validateOrRespond(res, validateDeviceParams, params)) return;
+function updateDevice(request, reply) {
+  const params = { id: Number(request.params.id) };
+  const data = request.body || {};
 
-  readBody(req, (err, data) => {
-    if (err) {
-      sendError(res, 400, err);
-      return;
-    }
+  if (!validateOrRespond(reply, validateDeviceParams, params)) return;
+  if (!validateOrRespond(reply, validateDeviceUpdate, data)) return;
 
-    if (!validateOrRespond(res, validateDeviceUpdate, data)) return;
+  const device = deviceService.updateDevice(params.id, data);
+  if (!device) {
+    return reply.code(404).send({ error: 'Device not found' });
+  }
 
-    const device = deviceService.updateDevice(params.id, data);
-    if (!device) {
-      sendError(res, 404, 'Device not found');
-      return;
-    }
-
-    sendJson(res, 200, { message: 'Device updated', device });
-  });
+  return reply.send({ message: 'Device updated', device });
 }
 
-function deleteDevice({ res, params }) {
-  if (!validateOrRespond(res, validateDeviceParams, params)) return;
+function deleteDevice(request, reply) {
+  const params = { id: Number(request.params.id) };
+  if (!validateOrRespond(reply, validateDeviceParams, params)) return;
 
   const removed = deviceService.removeDevice(params.id);
   if (!removed) {
-    sendError(res, 404, 'Device not found');
-    return;
+    return reply.code(404).send({ error: 'Device not found' });
   }
 
-  sendJson(res, 200, { message: 'Device removed' });
+  return reply.send({ message: 'Device removed' });
 }
 
 export { listDevices, createDevice, updateDevice, deleteDevice };

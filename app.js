@@ -1,40 +1,43 @@
-import { createServer } from 'node:http';
+import Fastify from 'fastify';
 import config from '#config';
-import { handleHealthRoutes } from '#routes/health.routes';
-import { handleErrorRoutes } from '#routes/error.routes';
-import { handleDeviceRoutes } from '#routes/device.routes';
-import { logRequest } from '#utils/logger';
-import { sendError } from '#utils/response';
+import { registerDeviceRoutes } from '#routes/device.routes';
+import { registerErrorRoutes } from '#routes/error.routes';
+import { registerHealthRoutes } from '#routes/health.routes';
 
-const server = createServer((req, res) => {
-  const method = req.method;
-  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = parsedUrl.pathname;
+const fastify = Fastify();
 
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+fastify.addHook('onClose', async () => {
+  console.log('Fastify server has been closed');
+});
 
-  res.on('finish', () => {
-    logRequest(method, pathname, res.statusCode);
+fastify.setNotFoundHandler((_request, reply) => {
+  reply.code(404).send({ error: 'Route not found' });
+});
+
+await fastify.register(registerHealthRoutes);
+await fastify.register(registerErrorRoutes);
+await fastify.register(registerDeviceRoutes);
+
+try {
+  await fastify.listen({
+    port: config.PORT,
+    host: config.HOSTNAME,
   });
 
-  const ctx = { req, res, method, pathname, parsedUrl };
-
-  const handled = handleHealthRoutes(ctx) || handleErrorRoutes(ctx) || handleDeviceRoutes(ctx);
-
-  if (!handled) {
-    sendError(res, 404, 'Route not found');
-  }
-});
-
-server.listen(config.PORT, config.HOSTNAME, () => {
   console.log(`Server running at http://${config.HOSTNAME}:${config.PORT}`);
-});
+} catch (error) {
+  console.error('Unable to start server:', error);
+  process.exit(1);
+}
 
 const SHUTDOWN_TIMEOUT_MS = 10000;
 let isShuttingDown = false;
 
 function gracefulShutdown(signal) {
-  if (isShuttingDown) return;
+  if (isShuttingDown) {
+    return;
+  }
+
   isShuttingDown = true;
 
   console.log(`Received ${signal}. Shutting down...`);
@@ -44,21 +47,24 @@ function gracefulShutdown(signal) {
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
 
-  server.close((err) => {
-    clearTimeout(shutdownTimer);
-    if (err) {
-      console.error('Error during server shutdown:', err);
+  fastify
+    .close()
+    .then(() => {
+      clearTimeout(shutdownTimer);
+      process.exit(0);
+    })
+    .catch((error) => {
+      clearTimeout(shutdownTimer);
+      console.error('Error during server shutdown:', error);
       process.exit(1);
-    }
-    process.exit(0);
-  });
+    });
 }
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
   gracefulShutdown('uncaughtException');
 });
 

@@ -1,12 +1,7 @@
 import { getHealth } from '#controllers/health.controller';
 
-function handleHealthRoutes(ctx) {
-  if (ctx.method === 'GET' && ctx.pathname === '/health') {
-    getHealth(ctx);
-    return true;
-  }
-
-  return false;
+async function registerHealthRoutes(fastify) {
+  fastify.get('/health', getHealth);
 }
 
-export { handleHealthRoutes };
+export { registerHealthRoutes };
