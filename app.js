@@ -1,10 +1,33 @@
 import Fastify from 'fastify';
-import config from '#config';
+import fastifyEnv from '@fastify/env';
 import { registerDeviceRoutes } from '#routes/device.routes';
 import { registerErrorRoutes } from '#routes/error.routes';
 import { registerHealthRoutes } from '#routes/health.routes';
+import envSchema from '#schemas/env.schema';
+
+async function loadConfig() {
+  const bootstrap = Fastify({ logger: false });
+
+  await bootstrap.register(fastifyEnv, {
+    confKey: 'config',
+    schema: envSchema,
+    dotenv: true,
+  });
+
+  await bootstrap.ready();
+
+  const config = { ...bootstrap.config };
+
+  await bootstrap.close();
+  return config;
+}
+
+const SHUTDOWN_TIMEOUT_MS = 10000;
+const config = await loadConfig();
 
 const fastify = Fastify();
+
+fastify.decorate('config', config);
 
 fastify.addHook('onClose', async () => {
   console.log('Fastify server has been closed');
@@ -20,17 +43,16 @@ await fastify.register(registerDeviceRoutes);
 
 try {
   await fastify.listen({
-    port: config.PORT,
-    host: config.HOSTNAME,
+    port: fastify.config.PORT,
+    host: fastify.config.HOSTNAME,
   });
 
-  console.log(`Server running at http://${config.HOSTNAME}:${config.PORT}`);
+  console.log(`Server running at http://${fastify.config.HOSTNAME}:${fastify.config.PORT}`);
 } catch (error) {
   console.error('Unable to start server:', error);
   process.exit(1);
 }
 
-const SHUTDOWN_TIMEOUT_MS = 10000;
 let isShuttingDown = false;
 
 function gracefulShutdown(signal) {

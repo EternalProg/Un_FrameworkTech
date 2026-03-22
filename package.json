@@ -16,10 +16,10 @@
     "check": "npm run lint && npm run format:check"
   },
   "imports": {
-    "#config": "./config/index.js",
     "#controllers/*": "./controllers/*.js",
     "#data/*": "./data/*.js",
     "#routes/*": "./routes/*.js",
+    "#schemas/*": "./schemas/*.js",
     "#services/*": "./services/*.js",
     "#utils/*": "./utils/*.js",
     "#validators/*": "./validators/*.js"
@@ -29,6 +29,7 @@
     "prettier": "^3.8.1"
   },
   "dependencies": {
+    "@fastify/env": "^5.0.3",
     "ajv": "^8.18.0",
     "fastify": "^5.8.2"
   }

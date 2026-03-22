@@ -1,7 +1,7 @@
 export default [
   {
     files: ['**/*.js'],
-    ignores: ['node_modules/**'],
+    ignores: ['**/node_modules/**'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -16,6 +16,14 @@ export default [
     rules: {
       'no-unused-vars': 'warn',
       'no-undef': 'error',
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'process',
+          property: 'env',
+          message: 'Use fastify.config from @fastify/env instead of process.env',
+        },
+      ],
     },
   },
 ];
