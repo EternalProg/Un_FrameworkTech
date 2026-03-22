@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import fastifyEnv from '@fastify/env';
+import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
 import { registerErrorRoutes } from '#routes/error.routes';
 import { registerHealthRoutes } from '#routes/health.routes';
@@ -51,6 +52,8 @@ fastify.addHook('onClose', async (instance) => {
 fastify.setNotFoundHandler((_request, reply) => {
   reply.code(404).send({ error: 'Route not found' });
 });
+
+fastify.setErrorHandler(errorHandler);
 
 await fastify.register(registerHealthRoutes);
 await fastify.register(registerErrorRoutes);
