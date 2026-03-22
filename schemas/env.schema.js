@@ -1,6 +1,6 @@
 const envSchema = {
   type: 'object',
-  required: ['PORT', 'HOSTNAME', 'NODE_ENV'],
+  required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'ADMIN_API_KEY'],
   properties: {
     PORT: {
       type: 'integer',
@@ -17,6 +17,11 @@ const envSchema = {
       type: 'string',
       enum: ['development', 'production'],
       default: 'development',
+    },
+    ADMIN_API_KEY: {
+      type: 'string',
+      minLength: 8,
+      default: 'change-me-please',
     },
   },
 };

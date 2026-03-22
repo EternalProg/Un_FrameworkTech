@@ -1,5 +1,10 @@
 function getHealth(_request, reply) {
+  return reply.send({ status: 'ok' });
+}
+
+function getHealthDetails(_request, reply) {
   return reply.send({
+    status: 'ok',
     pid: process.pid,
     nodeVersion: process.version,
     platform: process.platform,
@@ -8,4 +13,4 @@ function getHealth(_request, reply) {
   });
 }
 
-export { getHealth };
+export { getHealth, getHealthDetails };
