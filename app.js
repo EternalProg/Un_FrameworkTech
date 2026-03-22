@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import fastifyEnv from '@fastify/env';
+import fastifySensible from '@fastify/sensible';
+import { ERROR_MESSAGES } from '#constants/error-messages';
 import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
 import { registerErrorRoutes } from '#routes/error.routes';
@@ -45,12 +47,14 @@ const fastify = Fastify({
 
 fastify.decorate('config', config);
 
+await fastify.register(fastifySensible);
+
 fastify.addHook('onClose', async (instance) => {
   instance.log.info('Fastify server has been closed');
 });
 
 fastify.setNotFoundHandler((_request, reply) => {
-  reply.code(404).send({ error: 'Route not found' });
+  reply.notFound(ERROR_MESSAGES.ROUTE_NOT_FOUND);
 });
 
 fastify.setErrorHandler(errorHandler);

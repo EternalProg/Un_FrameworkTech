@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from '#constants/error-messages';
+import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
 
 function listDevices(request, reply) {
@@ -7,25 +9,25 @@ function listDevices(request, reply) {
 
 function createDevice(request, reply) {
   const device = deviceService.addDevice(request.body);
-  return reply.code(201).send({ message: 'Device added', device });
+  return reply.code(201).send({ message: SUCCESS_MESSAGES.DEVICE_ADDED, device });
 }
 
 function updateDevice(request, reply) {
   const device = deviceService.updateDevice(request.params.id, request.body);
   if (!device) {
-    return reply.code(404).send({ error: 'Device not found' });
+    return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
 
-  return reply.send({ message: 'Device updated', device });
+  return reply.send({ message: SUCCESS_MESSAGES.DEVICE_UPDATED, device });
 }
 
 function deleteDevice(request, reply) {
   const removed = deviceService.removeDevice(request.params.id);
   if (!removed) {
-    return reply.code(404).send({ error: 'Device not found' });
+    return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
 
-  return reply.send({ message: 'Device removed' });
+  return reply.send({ message: SUCCESS_MESSAGES.DEVICE_REMOVED });
 }
 
 export { listDevices, createDevice, updateDevice, deleteDevice };
