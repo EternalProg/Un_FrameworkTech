@@ -1,0 +1,8 @@
+{
+  "id": 2,
+  "device": "Smart Thermostat",
+  "status": "off",
+  "room": "Living room",
+  "description": "Controls the living room temperature",
+  "image": null
+}
