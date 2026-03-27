@@ -1,43 +1,158 @@
-import devices from '#data/devices.data';
+import { createWriteStream } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import { parse as parseCsv } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
+import Ajv from 'ajv';
+import * as deviceRepository from '#repositories/device.repository';
+import { getUploadDirectoryPath } from '../src/utils/path.utils.js';
 
-function listDevices(query = {}) {
-  let result = [...devices];
+const IMPORT_SCHEMA = {
+  type: 'object',
+  required: ['device', 'room'],
+  properties: {
+    device: { type: 'string', minLength: 1 },
+    room: { type: 'string', minLength: 1 },
+    status: { type: 'string', enum: ['on', 'off'] },
+    description: { type: 'string' },
+    image: { anyOf: [{ type: 'string', minLength: 1 }, { type: 'null' }] },
+  },
+  additionalProperties: false,
+};
+
+const FILE_SIZE_LIMIT_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = {
+  'image/jpeg': 'image.jpg',
+  'image/png': 'image.png',
+};
+
+const ajv = new Ajv();
+const validateImportRecord = ajv.compile(IMPORT_SCHEMA);
+
+function normalizeImportedRecord(rawRecord) {
+  return {
+    device: rawRecord.device,
+    room: rawRecord.room,
+    status: rawRecord.status || undefined,
+    description: rawRecord.description || undefined,
+    image: rawRecord.image || undefined,
+  };
+}
+
+async function listDevices(query = {}) {
+  let result = await deviceRepository.findAll();
 
   if (query.room) {
-    result = result.filter((device) => device.room.toLowerCase() === query.room.toLowerCase());
+    result = result.filter((item) => item.room.toLowerCase() === query.room.toLowerCase());
   }
 
   return result;
 }
 
-function addDevice(data) {
-  const nextId = devices.length ? devices[devices.length - 1].id + 1 : 1;
+async function addDevice(data) {
+  return deviceRepository.create(data);
+}
 
-  const newDevice = {
-    id: nextId,
-    device: data.device,
-    status: data.status || 'off',
-    room: data.room,
+async function updateDevice(id, data) {
+  return deviceRepository.update(id, data);
+}
+
+async function removeDevice(id) {
+  return deviceRepository.remove(id);
+}
+
+async function exportItemsToCsv(items) {
+  return stringify(items, {
+    header: true,
+    columns: ['id', 'device', 'status', 'room', 'description', 'image'],
+  });
+}
+
+function parseImportPayload(fileName, content) {
+  if (fileName.endsWith('.json')) {
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  }
+
+  if (fileName.endsWith('.csv')) {
+    return parseCsv(content, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    });
+  }
+
+  throw new Error('Unsupported file format. Use .csv or .json');
+}
+
+async function importItemsFromBuffer(fileName, content) {
+  const rows = parseImportPayload(fileName.toLowerCase(), content);
+
+  let importedCount = 0;
+  const rejected = [];
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const rawRecord = rows[index];
+    const record = normalizeImportedRecord(rawRecord);
+    const isValid = validateImportRecord(record);
+
+    if (!isValid) {
+      rejected.push({
+        row: index + 1,
+        reason: ajv.errorsText(validateImportRecord.errors),
+      });
+      continue;
+    }
+
+    await deviceRepository.create(record);
+    importedCount += 1;
+  }
+
+  return {
+    importedCount,
+    rejectedCount: rejected.length,
+    rejected,
   };
-
-  devices.push(newDevice);
-  return newDevice;
 }
 
-function updateDevice(id, data) {
-  const device = devices.find((item) => item.id === id);
-  if (!device) return null;
+async function uploadImageForDevice(id, filePart) {
+  const fileName = ALLOWED_IMAGE_TYPES[filePart.mimetype];
+  if (!fileName) {
+    throw new Error('Only image/jpeg and image/png are allowed');
+  }
 
-  Object.assign(device, data);
-  return device;
+  const uploadDirectoryPath = getUploadDirectoryPath(id);
+  await mkdir(uploadDirectoryPath, { recursive: true });
+
+  const targetPath = path.join(uploadDirectoryPath, fileName);
+
+  let receivedBytes = 0;
+  filePart.file.on('data', (chunk) => {
+    receivedBytes += chunk.length;
+    if (receivedBytes > FILE_SIZE_LIMIT_BYTES) {
+      filePart.file.destroy(new Error('Image size must be 5MB or less'));
+    }
+  });
+
+  await pipeline(filePart.file, createWriteStream(targetPath));
+
+  if (filePart.file.truncated) {
+    throw new Error('Image size must be 5MB or less');
+  }
+
+  const relativePath = `/${id}/${fileName}`;
+  const updatedItem = await deviceRepository.update(id, { image: relativePath });
+
+  return updatedItem;
 }
 
-function removeDevice(id) {
-  const index = devices.findIndex((item) => item.id === id);
-  if (index === -1) return false;
-
-  devices.splice(index, 1);
-  return true;
-}
-
-export { listDevices, addDevice, updateDevice, removeDevice };
+export {
+  listDevices,
+  addDevice,
+  updateDevice,
+  removeDevice,
+  exportItemsToCsv,
+  importItemsFromBuffer,
+  uploadImageForDevice,
+};
