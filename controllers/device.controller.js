@@ -63,4 +63,35 @@ async function importItems(request, reply) {
   return reply.send(report);
 }
 
-export { listDevices, createDevice, updateDevice, deleteDevice, exportItems, importItems };
+async function uploadItemImage(request, reply) {
+  const file = await request.file();
+
+  if (!file) {
+    return reply.badRequest('Image file is required');
+  }
+
+  try {
+    const updatedItem = await deviceService.uploadImageForDevice(request.params.id, file);
+
+    if (!updatedItem) {
+      return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
+    }
+
+    return reply.send({
+      message: SUCCESS_MESSAGES.IMAGE_UPLOADED,
+      device: withPublicImageUrl(updatedItem, request),
+    });
+  } catch (error) {
+    return reply.badRequest(error.message);
+  }
+}
+
+export {
+  listDevices,
+  createDevice,
+  updateDevice,
+  deleteDevice,
+  exportItems,
+  importItems,
+  uploadItemImage,
+};
