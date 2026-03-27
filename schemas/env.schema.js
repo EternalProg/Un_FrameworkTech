@@ -26,7 +26,7 @@ const envSchema = {
     CORS_ORIGIN: {
       type: 'string',
       minLength: 1,
-      default: 'https://api.example.com',
+      default: 'https://app.example.com',
     },
   },
 };

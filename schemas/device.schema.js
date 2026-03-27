@@ -1,6 +1,18 @@
+const imageFieldSchema = {
+  anyOf: [
+    {
+      type: 'string',
+      minLength: 1,
+    },
+    {
+      type: 'null',
+    },
+  ],
+};
+
 const deviceEntitySchema = {
   type: 'object',
-  required: ['id', 'device', 'status', 'room'],
+  required: ['id', 'device', 'status', 'room', 'description', 'image'],
   properties: {
     id: {
       type: 'integer',
@@ -18,6 +30,10 @@ const deviceEntitySchema = {
       type: 'string',
       minLength: 1,
     },
+    description: {
+      type: 'string',
+    },
+    image: imageFieldSchema,
   },
   additionalProperties: false,
 };
@@ -49,6 +65,10 @@ const deviceCreateBodySchema = {
       type: 'string',
       enum: ['on', 'off'],
     },
+    description: {
+      type: 'string',
+    },
+    image: imageFieldSchema,
   },
   additionalProperties: false,
 };
@@ -69,6 +89,10 @@ const deviceUpdateBodySchema = {
       type: 'string',
       enum: ['on', 'off'],
     },
+    description: {
+      type: 'string',
+    },
+    image: imageFieldSchema,
   },
   additionalProperties: false,
 };
@@ -80,6 +104,28 @@ const deviceParamsSchema = {
     id: {
       type: 'integer',
       minimum: 1,
+    },
+  },
+  additionalProperties: false,
+};
+
+const importReportSchema = {
+  type: 'object',
+  required: ['importedCount', 'rejectedCount', 'rejected'],
+  properties: {
+    importedCount: { type: 'integer', minimum: 0 },
+    rejectedCount: { type: 'integer', minimum: 0 },
+    rejected: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['row', 'reason'],
+        properties: {
+          row: { type: 'integer', minimum: 1 },
+          reason: { type: 'string', minLength: 1 },
+        },
+        additionalProperties: false,
+      },
     },
   },
   additionalProperties: false,
@@ -157,9 +203,32 @@ const deleteDeviceRouteSchema = {
   },
 };
 
+const importItemsRouteSchema = {
+  response: {
+    200: importReportSchema,
+  },
+};
+
+const uploadItemImageRouteSchema = {
+  params: deviceParamsSchema,
+  response: {
+    200: {
+      type: 'object',
+      required: ['message', 'device'],
+      properties: {
+        message: { type: 'string' },
+        device: deviceEntitySchema,
+      },
+      additionalProperties: false,
+    },
+  },
+};
+
 export {
   listDevicesRouteSchema,
   createDeviceRouteSchema,
   updateDeviceRouteSchema,
   deleteDeviceRouteSchema,
+  importItemsRouteSchema,
+  uploadItemImageRouteSchema,
 };
