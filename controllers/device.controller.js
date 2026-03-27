@@ -1,28 +1,36 @@
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
+import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
 
-function listDevices(request, reply) {
-  const items = deviceService.listDevices(request.query);
-  return reply.send({ count: items.length, items });
+async function listDevices(request, reply) {
+  const items = await deviceService.listDevices(request.query);
+  const mappedItems = items.map((item) => withPublicImageUrl(item, request));
+  return reply.send({ count: mappedItems.length, items: mappedItems });
 }
 
-function createDevice(request, reply) {
-  const device = deviceService.addDevice(request.body);
-  return reply.code(201).send({ message: SUCCESS_MESSAGES.DEVICE_ADDED, device });
+async function createDevice(request, reply) {
+  const device = await deviceService.addDevice(request.body);
+  return reply.code(201).send({
+    message: SUCCESS_MESSAGES.DEVICE_ADDED,
+    device: withPublicImageUrl(device, request),
+  });
 }
 
-function updateDevice(request, reply) {
-  const device = deviceService.updateDevice(request.params.id, request.body);
+async function updateDevice(request, reply) {
+  const device = await deviceService.updateDevice(request.params.id, request.body);
   if (!device) {
     return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
 
-  return reply.send({ message: SUCCESS_MESSAGES.DEVICE_UPDATED, device });
+  return reply.send({
+    message: SUCCESS_MESSAGES.DEVICE_UPDATED,
+    device: withPublicImageUrl(device, request),
+  });
 }
 
-function deleteDevice(request, reply) {
-  const removed = deviceService.removeDevice(request.params.id);
+async function deleteDevice(request, reply) {
+  const removed = await deviceService.removeDevice(request.params.id);
   if (!removed) {
     return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
@@ -30,4 +38,29 @@ function deleteDevice(request, reply) {
   return reply.send({ message: SUCCESS_MESSAGES.DEVICE_REMOVED });
 }
 
-export { listDevices, createDevice, updateDevice, deleteDevice };
+async function exportItems(request, reply) {
+  const items = await deviceService.listDevices(request.query);
+  const rows = items.map((item) => withPublicImageUrl(item, request));
+  const csvContent = await deviceService.exportItemsToCsv(rows);
+
+  reply.header('Content-Type', 'text/csv; charset=utf-8');
+  reply.header('Content-Disposition', 'attachment; filename="items.csv"');
+
+  return reply.send(csvContent);
+}
+
+async function importItems(request, reply) {
+  const file = await request.file();
+
+  if (!file) {
+    return reply.badRequest('File is required');
+  }
+
+  const buffer = await file.toBuffer();
+  const content = buffer.toString('utf-8');
+  const report = await deviceService.importItemsFromBuffer(file.filename, content);
+
+  return reply.send(report);
+}
+
+export { listDevices, createDevice, updateDevice, deleteDevice, exportItems, importItems };
