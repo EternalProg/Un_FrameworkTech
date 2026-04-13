@@ -33,6 +33,22 @@ const envSchema = {
       minLength: 1,
       default: 'http://127.0.0.1:3001/deviceTypes',
     },
+    GITHUB_TOKEN: {
+      type: 'string',
+      default: '',
+    },
+    GITHUB_ANALYTICS_MAX_CONTRIBUTORS: {
+      type: 'integer',
+      default: 0,
+    },
+    GITHUB_ANALYTICS_MAX_EVENTS: {
+      type: 'integer',
+      default: 0,
+    },
+    GITHUB_ANALYTICS_MAX_CANDIDATES: {
+      type: 'integer',
+      default: 0,
+    },
   },
 };
 

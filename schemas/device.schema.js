@@ -43,13 +43,16 @@ const externalDetailsSchema = {
   required: ['id', 'type', 'powerWatt'],
   properties: {
     id: {
-      anyOf: [{ type: 'integer' }, { type: 'null' }],
+      type: 'integer',
+      nullable: true,
     },
     type: {
-      anyOf: [{ type: 'string' }, { type: 'null' }],
+      type: 'string',
+      nullable: true,
     },
     powerWatt: {
-      anyOf: [{ type: 'number' }, { type: 'null' }],
+      type: 'number',
+      nullable: true,
     },
   },
   additionalProperties: false,
