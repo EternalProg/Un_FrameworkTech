@@ -3,6 +3,7 @@ import fastifyCors from '@fastify/cors';
 import fastifyEnv from '@fastify/env';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyRateLimit from '@fastify/rate-limit';
 import fastifySensible from '@fastify/sensible';
 import fastifyStatic from '@fastify/static';
 import { ERROR_MESSAGES } from '#constants/error-messages';
@@ -65,6 +66,11 @@ const fastify = Fastify({
 fastify.decorate('config', config);
 
 await fastify.register(fastifySensible);
+await fastify.register(fastifyRateLimit, {
+  global: true,
+  max: 100,
+  timeWindow: '1 minute',
+});
 await fastify.register(fastifyMultipart, {
   limits: {
     fileSize: 5 * 1024 * 1024,
