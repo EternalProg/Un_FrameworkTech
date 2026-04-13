@@ -49,6 +49,28 @@ const deviceQuerySchema = {
   additionalProperties: false,
 };
 
+const v2ItemsQuerySchema = {
+  type: 'object',
+  properties: {
+    page: {
+      type: 'integer',
+      minimum: 1,
+      default: 1,
+    },
+    limit: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 100,
+      default: 10,
+    },
+    room: {
+      type: 'string',
+      minLength: 1,
+    },
+  },
+  additionalProperties: false,
+};
+
 const deviceCreateBodySchema = {
   type: 'object',
   required: ['device', 'room'],
@@ -152,6 +174,27 @@ const listDevicesRouteSchema = {
   },
 };
 
+const listDevicesV2RouteSchema = {
+  querystring: v2ItemsQuerySchema,
+  response: {
+    200: {
+      type: 'object',
+      required: ['items', 'total', 'page', 'limit', 'totalPages'],
+      properties: {
+        items: {
+          type: 'array',
+          items: deviceEntitySchema,
+        },
+        total: { type: 'integer', minimum: 0 },
+        page: { type: 'integer', minimum: 1 },
+        limit: { type: 'integer', minimum: 1 },
+        totalPages: { type: 'integer', minimum: 1 },
+      },
+      additionalProperties: false,
+    },
+  },
+};
+
 const createDeviceRouteSchema = {
   body: deviceCreateBodySchema,
   response: {
@@ -226,6 +269,7 @@ const uploadItemImageRouteSchema = {
 
 export {
   listDevicesRouteSchema,
+  listDevicesV2RouteSchema,
   createDeviceRouteSchema,
   updateDeviceRouteSchema,
   deleteDeviceRouteSchema,

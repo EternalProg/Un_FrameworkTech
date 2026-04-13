@@ -56,6 +56,29 @@ async function listDevices(query = {}) {
   return result;
 }
 
+async function listDevicesPaginated(query = {}) {
+  const page = Number(query.page ?? 1);
+  const limit = Number(query.limit ?? 10);
+
+  const normalizedPage = Number.isInteger(page) && page > 0 ? page : 1;
+  const normalizedLimit = Number.isInteger(limit) && limit > 0 ? limit : 10;
+
+  const items = await listDevices(query);
+  const total = items.length;
+  const totalPages = total ? Math.ceil(total / normalizedLimit) : 1;
+
+  const startIndex = (normalizedPage - 1) * normalizedLimit;
+  const paginatedItems = items.slice(startIndex, startIndex + normalizedLimit);
+
+  return {
+    items: paginatedItems,
+    total,
+    page: normalizedPage,
+    limit: normalizedLimit,
+    totalPages,
+  };
+}
+
 async function addDevice(data) {
   return deviceRepository.create(data);
 }
@@ -159,6 +182,7 @@ async function uploadImageForDevice(id, filePart) {
 
 export {
   listDevices,
+  listDevicesPaginated,
   addDevice,
   updateDevice,
   removeDevice,

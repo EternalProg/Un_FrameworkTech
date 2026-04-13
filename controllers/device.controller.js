@@ -15,6 +15,19 @@ async function listDevices(request, reply) {
   return reply.send({ count: mappedItems.length, items: mappedItems });
 }
 
+async function listDevicesV2(request, reply) {
+  const result = await deviceService.listDevicesPaginated(request.query);
+  const mappedItems = result.items.map((item) => withPublicImageUrl(item, request));
+
+  return reply.send({
+    items: mappedItems,
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+  });
+}
+
 async function createDevice(request, reply) {
   const device = await deviceService.addDevice(request.body);
   return reply.code(201).send({
@@ -108,6 +121,7 @@ async function uploadItemImage(request, reply) {
 
 export {
   listDevices,
+  listDevicesV2,
   createDevice,
   updateDevice,
   deleteDevice,

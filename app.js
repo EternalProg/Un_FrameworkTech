@@ -10,6 +10,7 @@ import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
 import { registerErrorRoutes } from '#routes/error.routes';
 import { registerHealthRoutes } from '#routes/health.routes';
+import { registerV2Routes } from '#routes/v2.routes';
 import envSchema from '#schemas/env.schema';
 import { isModelHashChanged } from './src/migrations/check-model-version.js';
 import { createDataBackup } from './src/utils/backup.utils.js';
@@ -105,6 +106,7 @@ fastify.setErrorHandler(errorHandler);
 await fastify.register(registerHealthRoutes, { prefix: '/api/v1' });
 await fastify.register(registerErrorRoutes, { prefix: '/api/v1' });
 await fastify.register(registerDeviceRoutes, { prefix: '/api/v1' });
+await fastify.register(registerV2Routes, { prefix: '/api/v2' });
 
 await createDataBackup();
 
