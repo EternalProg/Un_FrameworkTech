@@ -102,9 +102,9 @@ fastify.setNotFoundHandler((request, reply) => {
 
 fastify.setErrorHandler(errorHandler);
 
-await fastify.register(registerHealthRoutes);
-await fastify.register(registerErrorRoutes);
-await fastify.register(registerDeviceRoutes);
+await fastify.register(registerHealthRoutes, { prefix: '/api/v1' });
+await fastify.register(registerErrorRoutes, { prefix: '/api/v1' });
+await fastify.register(registerDeviceRoutes, { prefix: '/api/v1' });
 
 await createDataBackup();
 
