@@ -6,6 +6,8 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifySensible from '@fastify/sensible';
 import fastifyStatic from '@fastify/static';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
@@ -66,6 +68,18 @@ const fastify = Fastify({
 fastify.decorate('config', config);
 
 await fastify.register(fastifySensible);
+await fastify.register(fastifySwagger, {
+  openapi: {
+    info: {
+      title: 'Lab API',
+      description: 'Fastify lab API documentation',
+      version: '1.0.0',
+    },
+  },
+});
+await fastify.register(fastifySwaggerUi, {
+  routePrefix: '/docs',
+});
 await fastify.register(fastifyRateLimit, {
   global: true,
   max: 100,

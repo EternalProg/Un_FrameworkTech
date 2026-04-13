@@ -10,6 +10,7 @@ import {
 import {
   createDeviceRouteSchema,
   deleteDeviceRouteSchema,
+  exportItemsRouteSchema,
   importItemsRouteSchema,
   listDevicesRouteSchema,
   updateDeviceRouteSchema,
@@ -27,7 +28,7 @@ async function registerDeviceRoutes(fastify) {
   fastify.patch('/items/:id', { schema: updateDeviceRouteSchema }, updateDevice);
   fastify.delete('/items/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
 
-  fastify.get('/items/export', exportItems);
+  fastify.get('/items/export', { schema: exportItemsRouteSchema }, exportItems);
   fastify.post('/items/import', { schema: importItemsRouteSchema }, importItems);
   fastify.post('/items/:id/image', { schema: uploadItemImageRouteSchema }, uploadItemImage);
 }

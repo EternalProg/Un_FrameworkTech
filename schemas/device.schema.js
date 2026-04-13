@@ -252,6 +252,14 @@ const importItemsRouteSchema = {
   },
 };
 
+const exportItemsRouteSchema = {
+  response: {
+    200: {
+      type: 'string',
+    },
+  },
+};
+
 const uploadItemImageRouteSchema = {
   params: deviceParamsSchema,
   response: {
@@ -273,6 +281,7 @@ export {
   createDeviceRouteSchema,
   updateDeviceRouteSchema,
   deleteDeviceRouteSchema,
+  exportItemsRouteSchema,
   importItemsRouteSchema,
   uploadItemImageRouteSchema,
 };
