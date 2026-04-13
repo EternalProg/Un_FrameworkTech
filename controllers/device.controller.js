@@ -3,6 +3,12 @@ import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
 import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
 
+const HTTP_STATUS_TEXT = {
+  400: 'Bad Request',
+  413: 'Payload Too Large',
+  415: 'Unsupported Media Type',
+};
+
 async function listDevices(request, reply) {
   const items = await deviceService.listDevices(request.query);
   const mappedItems = items.map((item) => withPublicImageUrl(item, request));
@@ -56,11 +62,20 @@ async function importItems(request, reply) {
     return reply.badRequest('File is required');
   }
 
-  const buffer = await file.toBuffer();
-  const content = buffer.toString('utf-8');
-  const report = await deviceService.importItemsFromBuffer(file.filename, content);
+  try {
+    const buffer = await file.toBuffer();
+    const content = buffer.toString('utf-8');
+    const report = await deviceService.importItemsFromBuffer(file.filename, content);
 
-  return reply.send(report);
+    return reply.send(report);
+  } catch (error) {
+    const statusCode = error.statusCode ?? 400;
+    return reply.code(statusCode).send({
+      statusCode,
+      error: HTTP_STATUS_TEXT[statusCode] ?? 'Bad Request',
+      message: error.message,
+    });
+  }
 }
 
 async function uploadItemImage(request, reply) {
@@ -82,7 +97,12 @@ async function uploadItemImage(request, reply) {
       device: withPublicImageUrl(updatedItem, request),
     });
   } catch (error) {
-    return reply.badRequest(error.message);
+    const statusCode = error.statusCode ?? 400;
+    return reply.code(statusCode).send({
+      statusCode,
+      error: HTTP_STATUS_TEXT[statusCode] ?? 'Bad Request',
+      message: error.message,
+    });
   }
 }
 

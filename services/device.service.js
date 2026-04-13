@@ -30,6 +30,12 @@ const ALLOWED_IMAGE_TYPES = {
 const ajv = new Ajv();
 const validateImportRecord = ajv.compile(IMPORT_SCHEMA);
 
+function createServiceError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
 function normalizeImportedRecord(rawRecord) {
   return {
     device: rawRecord.device,
@@ -71,8 +77,12 @@ async function exportItemsToCsv(items) {
 
 function parseImportPayload(fileName, content) {
   if (fileName.endsWith('.json')) {
-    const parsed = JSON.parse(content);
-    return Array.isArray(parsed) ? parsed : [parsed];
+    try {
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      throw createServiceError('Invalid JSON format', 400);
+    }
   }
 
   if (fileName.endsWith('.csv')) {
@@ -83,7 +93,7 @@ function parseImportPayload(fileName, content) {
     });
   }
 
-  throw new Error('Unsupported file format. Use .csv or .json');
+  throw createServiceError('Unsupported file format. Use .csv or .json', 415);
 }
 
 async function importItemsFromBuffer(fileName, content) {
@@ -119,7 +129,7 @@ async function importItemsFromBuffer(fileName, content) {
 async function uploadImageForDevice(id, filePart) {
   const fileName = ALLOWED_IMAGE_TYPES[filePart.mimetype];
   if (!fileName) {
-    throw new Error('Only image/jpeg and image/png are allowed');
+    throw createServiceError('Only image/jpeg and image/png are allowed', 415);
   }
 
   const uploadDirectoryPath = getUploadDirectoryPath(id);
@@ -138,7 +148,7 @@ async function uploadImageForDevice(id, filePart) {
   await pipeline(filePart.file, createWriteStream(targetPath));
 
   if (filePart.file.truncated) {
-    throw new Error('Image size must be 5MB or less');
+    throw createServiceError('Image size must be 5MB or less', 413);
   }
 
   const relativePath = `/${id}/${fileName}`;
