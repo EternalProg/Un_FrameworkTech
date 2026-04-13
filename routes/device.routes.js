@@ -5,6 +5,7 @@ import {
   deleteDevice,
   exportItems,
   importItems,
+  getItemExtendedDetails,
   uploadItemImage,
 } from '#controllers/device.controller';
 import {
@@ -12,6 +13,7 @@ import {
   deleteDeviceRouteSchema,
   exportItemsRouteSchema,
   importItemsRouteSchema,
+  itemDetailsRouteSchema,
   listDevicesRouteSchema,
   updateDeviceRouteSchema,
   uploadItemImageRouteSchema,
@@ -30,6 +32,7 @@ async function registerDeviceRoutes(fastify) {
 
   fastify.get('/items/export', { schema: exportItemsRouteSchema }, exportItems);
   fastify.post('/items/import', { schema: importItemsRouteSchema }, importItems);
+  fastify.get('/items/:id/details', { schema: itemDetailsRouteSchema }, getItemExtendedDetails);
   fastify.post('/items/:id/image', { schema: uploadItemImageRouteSchema }, uploadItemImage);
 }
 

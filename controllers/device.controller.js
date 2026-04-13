@@ -1,6 +1,7 @@
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
+import { getItemDetails } from '#services/item-details.service';
 import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
 
 const HTTP_STATUS_TEXT = {
@@ -119,6 +120,17 @@ async function uploadItemImage(request, reply) {
   }
 }
 
+async function getItemExtendedDetails(request, reply) {
+  const details = await getItemDetails(request.params.id, request.server.config.EXTERNAL_API_URL);
+
+  if (!details) {
+    return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
+  }
+
+  const device = withPublicImageUrl(details, request);
+  return reply.send(device);
+}
+
 export {
   listDevices,
   listDevicesV2,
@@ -128,4 +140,5 @@ export {
   exportItems,
   importItems,
   uploadItemImage,
+  getItemExtendedDetails,
 };

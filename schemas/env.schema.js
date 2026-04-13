@@ -28,6 +28,11 @@ const envSchema = {
       minLength: 1,
       default: 'https://app.example.com',
     },
+    EXTERNAL_API_URL: {
+      type: 'string',
+      minLength: 1,
+      default: 'http://127.0.0.1:3001/deviceTypes',
+    },
   },
 };
 

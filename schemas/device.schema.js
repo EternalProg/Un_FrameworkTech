@@ -38,6 +38,32 @@ const deviceEntitySchema = {
   additionalProperties: false,
 };
 
+const externalDetailsSchema = {
+  type: 'object',
+  required: ['id', 'type', 'powerWatt'],
+  properties: {
+    id: {
+      anyOf: [{ type: 'integer' }, { type: 'null' }],
+    },
+    type: {
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    },
+    powerWatt: {
+      anyOf: [{ type: 'number' }, { type: 'null' }],
+    },
+  },
+  additionalProperties: false,
+};
+
+const deviceDetailsSchema = {
+  ...deviceEntitySchema,
+  required: [...deviceEntitySchema.required, 'external'],
+  properties: {
+    ...deviceEntitySchema.properties,
+    external: externalDetailsSchema,
+  },
+};
+
 const deviceQuerySchema = {
   type: 'object',
   properties: {
@@ -275,6 +301,13 @@ const uploadItemImageRouteSchema = {
   },
 };
 
+const itemDetailsRouteSchema = {
+  params: deviceParamsSchema,
+  response: {
+    200: deviceDetailsSchema,
+  },
+};
+
 export {
   listDevicesRouteSchema,
   listDevicesV2RouteSchema,
@@ -284,4 +317,5 @@ export {
   exportItemsRouteSchema,
   importItemsRouteSchema,
   uploadItemImageRouteSchema,
+  itemDetailsRouteSchema,
 };

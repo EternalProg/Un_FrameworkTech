@@ -1,0 +1,19 @@
+{
+  "deviceTypes": [
+    {
+      "id": 1,
+      "type": "lamp",
+      "powerWatt": 10
+    },
+    {
+      "id": 2,
+      "type": "thermostat",
+      "powerWatt": 50
+    },
+    {
+      "id": 3,
+      "type": "sensor",
+      "powerWatt": 5
+    }
+  ]
+}
