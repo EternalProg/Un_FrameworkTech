@@ -3,3 +3,4 @@ node_modules/
 uploads/
 data/backups/
 data/items/*.tmp.json
+data/cache/
