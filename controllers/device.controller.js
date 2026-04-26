@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs';
 import { PassThrough, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { stringify } from 'csv-stringify';
@@ -189,6 +190,21 @@ async function getItemExtendedDetails(request, reply) {
   return reply.send(device);
 }
 
+async function downloadBackup(request, reply) {
+  try {
+    const backupFilePath = await deviceService.getBackupFilePath(request.params.timestamp);
+    reply.type('application/gzip');
+    reply.header('Content-Disposition', `attachment; filename="${request.params.timestamp}.gz"`);
+    return reply.send(createReadStream(backupFilePath));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return reply.notFound(ERROR_MESSAGES.BACKUP_NOT_FOUND);
+    }
+
+    throw error;
+  }
+}
+
 export {
   listDevices,
   listDevicesV2,
@@ -200,4 +216,5 @@ export {
   importItems,
   uploadItemImage,
   getItemExtendedDetails,
+  downloadBackup,
 };

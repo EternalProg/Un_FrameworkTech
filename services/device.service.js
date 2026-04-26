@@ -1,12 +1,12 @@
 import { createWriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parse as parseCsv } from 'csv-parse/sync';
 import Ajv from 'ajv';
 import * as deviceRepository from '#repositories/device.repository';
-import { getUploadDirectoryPath } from '../src/utils/path.utils.js';
+import { backupsDirectoryPath, getUploadDirectoryPath } from '../src/utils/path.utils.js';
 
 const IMPORT_SCHEMA = {
   type: 'object',
@@ -190,6 +190,12 @@ async function uploadImageForDevice(id, filePart) {
   return updatedItem;
 }
 
+async function getBackupFilePath(timestamp) {
+  const backupFilePath = path.join(backupsDirectoryPath, `${timestamp}.gz`);
+  await access(backupFilePath);
+  return backupFilePath;
+}
+
 export {
   listDevices,
   listDevicesPaginated,
@@ -197,6 +203,7 @@ export {
   updateDevice,
   removeDevice,
   streamDevices,
+  getBackupFilePath,
   importItemsFromBuffer,
   uploadImageForDevice,
 };

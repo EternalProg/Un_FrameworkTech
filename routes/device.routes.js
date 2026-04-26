@@ -1,3 +1,4 @@
+import { ERROR_MESSAGES } from '#constants/error-messages';
 import {
   listDevices,
   createDevice,
@@ -8,6 +9,7 @@ import {
   importItems,
   getItemExtendedDetails,
   uploadItemImage,
+  downloadBackup,
 } from '#controllers/device.controller';
 import {
   createDeviceRouteSchema,
@@ -19,9 +21,19 @@ import {
   streamItemsRouteSchema,
   updateDeviceRouteSchema,
   uploadItemImageRouteSchema,
+  getBackupRouteSchema,
 } from '#schemas/device.schema';
 import * as deviceService from '#services/device.service';
 import { ITEM_EVENT_NAMES, itemEvents } from '../src/events/items.events.js';
+
+async function requireAdminApiKey(request, reply) {
+  const apiKeyHeader = request.headers['x-api-key'];
+  const apiKey = Array.isArray(apiKeyHeader) ? apiKeyHeader[0] : apiKeyHeader;
+
+  if (apiKey !== request.server.config.ADMIN_API_KEY) {
+    return reply.unauthorized(ERROR_MESSAGES.UNAUTHORIZED);
+  }
+}
 
 async function registerDeviceRoutes(fastify) {
   const sockets = new Set();
@@ -68,7 +80,8 @@ async function registerDeviceRoutes(fastify) {
 
   fastify.get('/items/export', { schema: exportItemsRouteSchema }, exportItems);
   fastify.get('/items/stream', { schema: streamItemsRouteSchema }, streamItems);
-  fastify.get('/items/ws', { websocket: true }, async (socket) => {
+  fastify.get('/items/ws', { websocket: true }, async (connection) => {
+    const socket = connection.socket ?? connection;
     sockets.add(socket);
 
     const items = await deviceService.listDevices();
@@ -85,6 +98,14 @@ async function registerDeviceRoutes(fastify) {
   fastify.post('/items/import', { schema: importItemsRouteSchema }, importItems);
   fastify.get('/items/:id/details', { schema: itemDetailsRouteSchema }, getItemExtendedDetails);
   fastify.post('/items/:id/image', { schema: uploadItemImageRouteSchema }, uploadItemImage);
+  fastify.get(
+    '/backups/:timestamp',
+    {
+      onRequest: [requireAdminApiKey],
+      schema: getBackupRouteSchema,
+    },
+    downloadBackup,
+  );
 }
 
 export { registerDeviceRoutes };

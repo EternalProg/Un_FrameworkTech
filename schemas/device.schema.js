@@ -314,6 +314,27 @@ const streamItemsRouteSchema = {
   },
 };
 
+const backupParamsSchema = {
+  type: 'object',
+  required: ['timestamp'],
+  properties: {
+    timestamp: {
+      type: 'string',
+      pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}-\\d{3}Z$',
+    },
+  },
+  additionalProperties: false,
+};
+
+const getBackupRouteSchema = {
+  params: backupParamsSchema,
+  response: {
+    200: {
+      type: 'string',
+    },
+  },
+};
+
 const uploadItemImageRouteSchema = {
   params: deviceParamsSchema,
   response: {
@@ -344,6 +365,7 @@ export {
   deleteDeviceRouteSchema,
   exportItemsRouteSchema,
   streamItemsRouteSchema,
+  getBackupRouteSchema,
   importItemsRouteSchema,
   uploadItemImageRouteSchema,
   itemDetailsRouteSchema,
