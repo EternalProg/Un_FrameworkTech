@@ -1,7 +1,11 @@
+import { PassThrough, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { stringify } from 'csv-stringify';
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
 import { getItemDetails } from '#services/item-details.service';
+import { SmartHomeActiveTransform } from '../src/transforms/smart-home-active.transform.js';
 import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
 
 const HTTP_STATUS_TEXT = {
@@ -59,14 +63,40 @@ async function deleteDevice(request, reply) {
 }
 
 async function exportItems(request, reply) {
-  const items = await deviceService.listDevices(request.query);
-  const rows = items.map((item) => withPublicImageUrl(item, request));
-  const csvContent = await deviceService.exportItemsToCsv(rows);
+  const shouldTransform = request.query.transform === true;
+  const columns = shouldTransform
+    ? ['id', 'device', 'status', 'room', 'description', 'image', 'isActive']
+    : ['id', 'device', 'status', 'room', 'description', 'image'];
+
+  const sourceStream = deviceService.streamDevices(request.query);
+  const publicImageUrlTransform = new Transform({
+    objectMode: true,
+    transform(item, _encoding, callback) {
+      callback(null, withPublicImageUrl(item, request));
+    },
+  });
+  const csvStream = stringify({
+    header: true,
+    columns,
+  });
+  const outputStream = new PassThrough();
+
+  const streams = [sourceStream, publicImageUrlTransform];
+
+  if (shouldTransform) {
+    streams.push(new SmartHomeActiveTransform());
+  }
+
+  streams.push(csvStream, outputStream);
+
+  pipeline(streams[0], ...streams.slice(1)).catch((error) => {
+    outputStream.destroy(error);
+  });
 
   reply.header('Content-Type', 'text/csv; charset=utf-8');
   reply.header('Content-Disposition', 'attachment; filename="items.csv"');
 
-  return reply.send(csvContent);
+  return reply.send(outputStream);
 }
 
 async function importItems(request, reply) {

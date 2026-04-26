@@ -1,9 +1,9 @@
 import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parse as parseCsv } from 'csv-parse/sync';
-import { stringify } from 'csv-stringify/sync';
 import Ajv from 'ajv';
 import * as deviceRepository from '#repositories/device.repository';
 import { getUploadDirectoryPath } from '../src/utils/path.utils.js';
@@ -91,11 +91,21 @@ async function removeDevice(id) {
   return deviceRepository.remove(id);
 }
 
-async function exportItemsToCsv(items) {
-  return stringify(items, {
-    header: true,
-    columns: ['id', 'device', 'status', 'room', 'description', 'image'],
-  });
+function streamDevices(query = {}) {
+  const roomFilter = query.room?.toLowerCase();
+
+  return Readable.from(
+    (async function* filterDevices() {
+      for await (const item of deviceRepository.streamAll()) {
+        if (roomFilter && item.room.toLowerCase() !== roomFilter) {
+          continue;
+        }
+
+        yield item;
+      }
+    })(),
+    { objectMode: true },
+  );
 }
 
 function parseImportPayload(fileName, content) {
@@ -186,7 +196,7 @@ export {
   addDevice,
   updateDevice,
   removeDevice,
-  exportItemsToCsv,
+  streamDevices,
   importItemsFromBuffer,
   uploadImageForDevice,
 };

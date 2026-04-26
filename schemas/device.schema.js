@@ -182,6 +182,21 @@ const importReportSchema = {
   additionalProperties: false,
 };
 
+const exportItemsQuerySchema = {
+  type: 'object',
+  properties: {
+    room: {
+      type: 'string',
+      minLength: 1,
+    },
+    transform: {
+      type: 'boolean',
+      default: false,
+    },
+  },
+  additionalProperties: false,
+};
+
 const listDevicesRouteSchema = {
   querystring: deviceQuerySchema,
   response: {
@@ -282,6 +297,7 @@ const importItemsRouteSchema = {
 };
 
 const exportItemsRouteSchema = {
+  querystring: exportItemsQuerySchema,
   response: {
     200: {
       type: 'string',

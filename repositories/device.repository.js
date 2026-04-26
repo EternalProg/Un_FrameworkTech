@@ -1,5 +1,6 @@
 import { readdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { buildItemWithDefaults } from '../src/models/item.model.js';
 import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../src/utils/file.utils.js';
 import {
@@ -18,7 +19,21 @@ async function listItemFiles() {
       (entry) =>
         entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp.json'),
     )
+    .sort((left, right) => Number.parseInt(left.name, 10) - Number.parseInt(right.name, 10))
     .map((entry) => path.join(itemsDirectoryPath, entry.name));
+}
+
+function streamAll() {
+  return Readable.from(
+    (async function* readAllItems() {
+      const filePaths = await listItemFiles();
+
+      for (const filePath of filePaths) {
+        yield await readJsonFile(filePath);
+      }
+    })(),
+    { objectMode: true },
+  );
 }
 
 async function findAll() {
@@ -100,4 +115,4 @@ async function getUploadsRootPath() {
   return uploadsDirectoryPath;
 }
 
-export { findAll, findById, create, update, remove, removeAll, getUploadsRootPath };
+export { findAll, findById, create, update, remove, removeAll, streamAll, getUploadsRootPath };
