@@ -87,6 +87,9 @@ async function exportItems(request, reply) {
   const csvStream = stringify({
     header: true,
     columns,
+    cast: {
+      boolean: (value) => (value ? 'true' : 'false'),
+    },
   });
   const outputStream = new PassThrough();
 
