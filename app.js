@@ -8,6 +8,7 @@ import fastifySensible from '@fastify/sensible';
 import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyWebsocket from '@fastify/websocket';
 import { ERROR_MESSAGES } from '#constants/error-messages';
 import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
@@ -97,6 +98,7 @@ await fastify.register(fastifyCors, {
   methods: CORS_METHODS,
 });
 await fastify.register(fastifyHelmet, { global: true });
+await fastify.register(fastifyWebsocket);
 await fastify.register(fastifyStatic, {
   root: uploadsDirectoryPath,
   prefix: '/uploads/',

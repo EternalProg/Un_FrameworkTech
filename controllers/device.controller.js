@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from '#constants/error-messages';
 import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
 import { getItemDetails } from '#services/item-details.service';
+import { ITEM_EVENT_NAMES, itemEvents } from '../src/events/items.events.js';
 import { NdjsonTransform } from '../src/transforms/ndjson.transform.js';
 import { SmartHomeActiveTransform } from '../src/transforms/smart-home-active.transform.js';
 import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
@@ -36,6 +37,8 @@ async function listDevicesV2(request, reply) {
 
 async function createDevice(request, reply) {
   const device = await deviceService.addDevice(request.body);
+  itemEvents.emit(ITEM_EVENT_NAMES.CREATED, device);
+
   return reply.code(201).send({
     message: SUCCESS_MESSAGES.DEVICE_ADDED,
     device: withPublicImageUrl(device, request),
@@ -48,6 +51,8 @@ async function updateDevice(request, reply) {
     return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
 
+  itemEvents.emit(ITEM_EVENT_NAMES.UPDATED, device);
+
   return reply.send({
     message: SUCCESS_MESSAGES.DEVICE_UPDATED,
     device: withPublicImageUrl(device, request),
@@ -59,6 +64,8 @@ async function deleteDevice(request, reply) {
   if (!removed) {
     return reply.notFound(ERROR_MESSAGES.DEVICE_NOT_FOUND);
   }
+
+  itemEvents.emit(ITEM_EVENT_NAMES.DELETED, request.params.id);
 
   return reply.send({ message: SUCCESS_MESSAGES.DEVICE_REMOVED });
 }
