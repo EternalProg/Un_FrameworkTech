@@ -305,6 +305,15 @@ const exportItemsRouteSchema = {
   },
 };
 
+const streamItemsRouteSchema = {
+  querystring: deviceQuerySchema,
+  response: {
+    200: {
+      type: 'string',
+    },
+  },
+};
+
 const uploadItemImageRouteSchema = {
   params: deviceParamsSchema,
   response: {
@@ -334,6 +343,7 @@ export {
   updateDeviceRouteSchema,
   deleteDeviceRouteSchema,
   exportItemsRouteSchema,
+  streamItemsRouteSchema,
   importItemsRouteSchema,
   uploadItemImageRouteSchema,
   itemDetailsRouteSchema,

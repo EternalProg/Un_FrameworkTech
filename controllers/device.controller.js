@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from '#constants/error-messages';
 import { SUCCESS_MESSAGES } from '#constants/success-messages';
 import * as deviceService from '#services/device.service';
 import { getItemDetails } from '#services/item-details.service';
+import { NdjsonTransform } from '../src/transforms/ndjson.transform.js';
 import { SmartHomeActiveTransform } from '../src/transforms/smart-home-active.transform.js';
 import { withPublicImageUrl } from '../src/utils/image-url.utils.js';
 
@@ -99,6 +100,26 @@ async function exportItems(request, reply) {
   return reply.send(outputStream);
 }
 
+async function streamItems(request, reply) {
+  const sourceStream = deviceService.streamDevices(request.query);
+  const publicImageUrlTransform = new Transform({
+    objectMode: true,
+    transform(item, _encoding, callback) {
+      callback(null, withPublicImageUrl(item, request));
+    },
+  });
+  const outputStream = new PassThrough();
+
+  pipeline(sourceStream, publicImageUrlTransform, new NdjsonTransform(), outputStream).catch(
+    (error) => {
+      outputStream.destroy(error);
+    },
+  );
+
+  reply.type('application/x-ndjson');
+  return reply.send(outputStream);
+}
+
 async function importItems(request, reply) {
   const file = await request.file();
 
@@ -168,6 +189,7 @@ export {
   updateDevice,
   deleteDevice,
   exportItems,
+  streamItems,
   importItems,
   uploadItemImage,
   getItemExtendedDetails,

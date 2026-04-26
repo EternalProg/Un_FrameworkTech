@@ -4,6 +4,7 @@ import {
   updateDevice,
   deleteDevice,
   exportItems,
+  streamItems,
   importItems,
   getItemExtendedDetails,
   uploadItemImage,
@@ -15,6 +16,7 @@ import {
   importItemsRouteSchema,
   itemDetailsRouteSchema,
   listDevicesRouteSchema,
+  streamItemsRouteSchema,
   updateDeviceRouteSchema,
   uploadItemImageRouteSchema,
 } from '#schemas/device.schema';
@@ -31,6 +33,7 @@ async function registerDeviceRoutes(fastify) {
   fastify.delete('/items/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
 
   fastify.get('/items/export', { schema: exportItemsRouteSchema }, exportItems);
+  fastify.get('/items/stream', { schema: streamItemsRouteSchema }, streamItems);
   fastify.post('/items/import', { schema: importItemsRouteSchema }, importItems);
   fastify.get('/items/:id/details', { schema: itemDetailsRouteSchema }, getItemExtendedDetails);
   fastify.post('/items/:id/image', { schema: uploadItemImageRouteSchema }, uploadItemImage);
