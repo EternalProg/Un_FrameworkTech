@@ -1,0 +1,14 @@
+[
+  {
+    "device": "Motion Sensor",
+    "room": "Hall",
+    "status": "on",
+    "description": "Hallway motion detector"
+  },
+  {
+    "device": "Leak Detector",
+    "room": "Bathroom",
+    "status": "off",
+    "description": "Water leak alarm"
+  }
+]
