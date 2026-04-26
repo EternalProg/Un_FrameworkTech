@@ -44,15 +44,17 @@ async function createDataBackup() {
 
 async function keepLatestBackups() {
   const backupEntries = await readdir(backupsDirectoryPath, { withFileTypes: true });
-  const backupFiles = backupEntries
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.gz'))
+  const backups = backupEntries
+    .filter((entry) => entry.isDirectory() || (entry.isFile() && entry.name.endsWith('.gz')))
     .map((entry) => entry.name)
     .sort((left, right) => right.localeCompare(left));
 
-  const staleFiles = backupFiles.slice(MAX_BACKUP_COUNT);
+  const staleBackups = backups.slice(MAX_BACKUP_COUNT);
 
   await Promise.all(
-    staleFiles.map((fileName) => rm(path.join(backupsDirectoryPath, fileName), { force: true })),
+    staleBackups.map((backupName) =>
+      rm(path.join(backupsDirectoryPath, backupName), { recursive: true, force: true }),
+    ),
   );
 }
 
