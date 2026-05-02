@@ -22,7 +22,6 @@ async function mysqlPlugin(fastify) {
   }
 
   fastify.decorate('mysql', pool);
-  fastify.decorate('db', pool);
 
   fastify.addHook('onClose', async () => {
     await pool.end();
