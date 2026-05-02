@@ -5,6 +5,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parse as parseCsv } from 'csv-parse/sync';
 import Ajv from 'ajv';
+import { REDIS_KEYS, buildV2ItemsCacheKey } from '#constants/redis-keys';
 import { backupsDirectoryPath, getUploadDirectoryPath } from '../src/utils/path.utils.js';
 
 const IMPORT_SCHEMA = {
@@ -28,11 +29,17 @@ const ALLOWED_IMAGE_TYPES = {
 
 const ajv = new Ajv();
 const validateImportRecord = ajv.compile(IMPORT_SCHEMA);
+const V2_ITEMS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 let deviceRepository = null;
+let redisClient = null;
 
 function setDeviceRepository(repository) {
   deviceRepository = repository;
+}
+
+function setDeviceServiceDependencies({ redis }) {
+  redisClient = redis;
 }
 
 function getDeviceRepository() {
@@ -41,6 +48,48 @@ function getDeviceRepository() {
   }
 
   return deviceRepository;
+}
+
+async function getCachedV2Items(query) {
+  if (!redisClient) {
+    return null;
+  }
+
+  const key = buildV2ItemsCacheKey(query);
+  const payload = await redisClient.get(key);
+
+  if (!payload) {
+    return null;
+  }
+
+  return JSON.parse(payload);
+}
+
+async function setCachedV2Items(query, value) {
+  if (!redisClient) {
+    return;
+  }
+
+  const key = buildV2ItemsCacheKey(query);
+  await redisClient.set(key, JSON.stringify(value), 'EX', V2_ITEMS_CACHE_TTL_SECONDS);
+}
+
+async function invalidateV2ItemsCache() {
+  if (!redisClient) {
+    return;
+  }
+
+  let cursor = '0';
+  const pattern = `${REDIS_KEYS.V2_ITEMS_PREFIX}:*`;
+
+  do {
+    const [nextCursor, keys] = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = nextCursor;
+
+    if (keys.length) {
+      await redisClient.del(...keys);
+    }
+  } while (cursor !== '0');
 }
 
 function createServiceError(message, statusCode) {
@@ -70,6 +119,12 @@ async function listDevices(query = {}) {
 }
 
 async function listDevicesPaginated(query = {}) {
+  const cachedResult = await getCachedV2Items(query);
+
+  if (cachedResult) {
+    return cachedResult;
+  }
+
   const page = Number(query.page ?? 1);
   const limit = Number(query.limit ?? 10);
 
@@ -83,25 +138,42 @@ async function listDevicesPaginated(query = {}) {
   const startIndex = (normalizedPage - 1) * normalizedLimit;
   const paginatedItems = items.slice(startIndex, startIndex + normalizedLimit);
 
-  return {
+  const result = {
     items: paginatedItems,
     total,
     page: normalizedPage,
     limit: normalizedLimit,
     totalPages,
   };
+
+  await setCachedV2Items(query, result);
+  return result;
 }
 
 async function addDevice(data) {
-  return getDeviceRepository().create(data);
+  const createdDevice = await getDeviceRepository().create(data);
+  await invalidateV2ItemsCache();
+  return createdDevice;
 }
 
 async function updateDevice(id, data) {
-  return getDeviceRepository().update(id, data);
+  const updatedDevice = await getDeviceRepository().update(id, data);
+
+  if (updatedDevice) {
+    await invalidateV2ItemsCache();
+  }
+
+  return updatedDevice;
 }
 
 async function removeDevice(id) {
-  return getDeviceRepository().remove(id);
+  const isRemoved = await getDeviceRepository().remove(id);
+
+  if (isRemoved) {
+    await invalidateV2ItemsCache();
+  }
+
+  return isRemoved;
 }
 
 async function findDeviceById(id) {
@@ -169,6 +241,10 @@ async function importItemsFromBuffer(fileName, content) {
     importedCount += 1;
   }
 
+  if (importedCount > 0) {
+    await invalidateV2ItemsCache();
+  }
+
   return {
     importedCount,
     rejectedCount: rejected.length,
@@ -225,4 +301,5 @@ export {
   importItemsFromBuffer,
   uploadImageForDevice,
   setDeviceRepository,
+  setDeviceServiceDependencies,
 };

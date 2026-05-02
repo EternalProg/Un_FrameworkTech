@@ -18,7 +18,7 @@ import { registerHealthRoutes } from '#routes/health.routes';
 import { registerV2Routes } from '#routes/v2.routes';
 import { createDeviceRepository } from '#repositories/device.repository';
 import envSchema from '#schemas/env.schema';
-import { setDeviceRepository } from '#services/device.service';
+import { setDeviceRepository, setDeviceServiceDependencies } from '#services/device.service';
 import { setItemDetailsDependencies } from '#services/item-details.service';
 import drizzlePlugin from './db/drizzle.js';
 import mysqlPlugin from './db/mysql.js';
@@ -109,6 +109,7 @@ await fastify.register(fastifyWebsocket);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
 setDeviceRepository(createDeviceRepository(fastify.db));
+setDeviceServiceDependencies({ redis: fastify.redis });
 setItemDetailsDependencies({ redis: fastify.redis });
 await fastify.register(fastifyStatic, {
   root: uploadsDirectoryPath,
