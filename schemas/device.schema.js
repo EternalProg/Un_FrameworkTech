@@ -15,8 +15,9 @@ const deviceEntitySchema = {
   required: ['id', 'device', 'status', 'room', 'description', 'image'],
   properties: {
     id: {
-      type: 'integer',
-      minimum: 1,
+      type: 'string',
+      minLength: 24,
+      maxLength: 24,
     },
     device: {
       type: 'string',
@@ -153,8 +154,9 @@ const deviceParamsSchema = {
   required: ['id'],
   properties: {
     id: {
-      type: 'integer',
-      minimum: 1,
+      type: 'string',
+      minLength: 24,
+      maxLength: 24,
     },
   },
   additionalProperties: false,

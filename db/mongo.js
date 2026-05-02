@@ -5,6 +5,7 @@ async function mongoPlugin(fastify) {
   try {
     await mongoose.connect(fastify.config.MONGO_URL, {
       dbName: fastify.config.MONGO_DB_NAME,
+      serverSelectionTimeoutMS: 5000,
     });
 
     fastify.decorate('db', mongoose.connection);
@@ -14,7 +15,7 @@ async function mongoPlugin(fastify) {
     });
   } catch (error) {
     fastify.log.error({ err: error }, 'MongoDB connection failed');
-    process.exit(1);
+    throw error;
   }
 }
 

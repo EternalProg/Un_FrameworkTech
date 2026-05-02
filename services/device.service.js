@@ -5,7 +5,6 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parse as parseCsv } from 'csv-parse/sync';
 import Ajv from 'ajv';
-import * as deviceRepository from '#repositories/device.repository';
 import { backupsDirectoryPath, getUploadDirectoryPath } from '../src/utils/path.utils.js';
 
 const IMPORT_SCHEMA = {
@@ -30,6 +29,20 @@ const ALLOWED_IMAGE_TYPES = {
 const ajv = new Ajv();
 const validateImportRecord = ajv.compile(IMPORT_SCHEMA);
 
+let deviceRepository = null;
+
+function setDeviceRepository(repository) {
+  deviceRepository = repository;
+}
+
+function getDeviceRepository() {
+  if (!deviceRepository) {
+    throw new Error('Device repository is not configured');
+  }
+
+  return deviceRepository;
+}
+
 function createServiceError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
@@ -47,7 +60,7 @@ function normalizeImportedRecord(rawRecord) {
 }
 
 async function listDevices(query = {}) {
-  let result = await deviceRepository.findAll();
+  let result = await getDeviceRepository().findAll();
 
   if (query.room) {
     result = result.filter((item) => item.room.toLowerCase() === query.room.toLowerCase());
@@ -80,15 +93,19 @@ async function listDevicesPaginated(query = {}) {
 }
 
 async function addDevice(data) {
-  return deviceRepository.create(data);
+  return getDeviceRepository().create(data);
 }
 
 async function updateDevice(id, data) {
-  return deviceRepository.update(id, data);
+  return getDeviceRepository().update(id, data);
 }
 
 async function removeDevice(id) {
-  return deviceRepository.remove(id);
+  return getDeviceRepository().remove(id);
+}
+
+async function findDeviceById(id) {
+  return getDeviceRepository().findById(id);
 }
 
 function streamDevices(query = {}) {
@@ -96,7 +113,7 @@ function streamDevices(query = {}) {
 
   return Readable.from(
     (async function* filterDevices() {
-      for await (const item of deviceRepository.streamAll()) {
+      for await (const item of getDeviceRepository().streamAll()) {
         if (roomFilter && item.room.toLowerCase() !== roomFilter) {
           continue;
         }
@@ -148,7 +165,7 @@ async function importItemsFromBuffer(fileName, content) {
       continue;
     }
 
-    await deviceRepository.create(record);
+    await getDeviceRepository().create(record);
     importedCount += 1;
   }
 
@@ -185,7 +202,7 @@ async function uploadImageForDevice(id, filePart) {
   }
 
   const relativePath = `/${id}/${fileName}`;
-  const updatedItem = await deviceRepository.update(id, { image: relativePath });
+  const updatedItem = await getDeviceRepository().update(id, { image: relativePath });
 
   return updatedItem;
 }
@@ -202,8 +219,10 @@ export {
   addDevice,
   updateDevice,
   removeDevice,
+  findDeviceById,
   streamDevices,
   getBackupFilePath,
   importItemsFromBuffer,
   uploadImageForDevice,
+  setDeviceRepository,
 };
