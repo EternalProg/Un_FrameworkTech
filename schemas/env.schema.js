@@ -1,6 +1,17 @@
 const envSchema = {
   type: 'object',
-  required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'ADMIN_API_KEY', 'CORS_ORIGIN'],
+  required: [
+    'PORT',
+    'HOSTNAME',
+    'NODE_ENV',
+    'ADMIN_API_KEY',
+    'CORS_ORIGIN',
+    'MYSQL_HOST',
+    'MYSQL_PORT',
+    'MYSQL_USER',
+    'MYSQL_PASSWORD',
+    'MYSQL_DB',
+  ],
   properties: {
     PORT: {
       type: 'integer',
@@ -32,6 +43,31 @@ const envSchema = {
       type: 'string',
       minLength: 1,
       default: 'http://127.0.0.1:3001/deviceTypes',
+    },
+    MYSQL_HOST: {
+      type: 'string',
+      minLength: 1,
+      default: '127.0.0.1',
+    },
+    MYSQL_PORT: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 65535,
+      default: 3306,
+    },
+    MYSQL_USER: {
+      type: 'string',
+      minLength: 1,
+      default: 'root',
+    },
+    MYSQL_PASSWORD: {
+      type: 'string',
+      default: '',
+    },
+    MYSQL_DB: {
+      type: 'string',
+      minLength: 1,
+      default: 'framework_tech_labs',
     },
     GITHUB_TOKEN: {
       type: 'string',
