@@ -10,6 +10,7 @@
     "predev": "npm run check",
     "dev": "node --watch app.js",
     "seed": "node src/scripts/seed.js",
+    "seed:force": "node src/scripts/seed.js --force",
     "migrate": "node src/migrations/migrate.js",
     "external": "json-server db.json --port 3001",
     "lint": "eslint .",

@@ -1,35 +1,77 @@
-import { rm } from 'node:fs/promises';
-import { ensureDirectory, writeJsonFileAtomic } from '../utils/file.utils.js';
-import { getItemFilePath, getItemTempFilePath, itemsDirectoryPath } from '../utils/path.utils.js';
-import { buildItemWithDefaults } from '../models/item.model.js';
+import Fastify from 'fastify';
+import fastifyEnv from '@fastify/env';
+import mysql from 'mysql2/promise';
+import envSchema from '../../schemas/env.schema.js';
 
 const seedItems = [
   {
-    id: 1,
     device: 'Smart Lamp',
     status: 'on',
     room: 'Kitchen',
     description: 'Main kitchen lamp',
+    image: null,
   },
   {
-    id: 2,
     device: 'Smart Thermostat',
     status: 'off',
     room: 'Living room',
     description: 'Controls the living room temperature',
+    image: null,
   },
 ];
 
+const isForceSeed = process.argv.includes('--force');
+
+async function loadConfig() {
+  const bootstrap = Fastify({ logger: false });
+
+  await bootstrap.register(fastifyEnv, {
+    confKey: 'config',
+    schema: envSchema,
+    dotenv: true,
+  });
+
+  await bootstrap.ready();
+  const config = { ...bootstrap.config };
+  await bootstrap.close();
+
+  return config;
+}
+
 async function seed() {
-  await rm(itemsDirectoryPath, { recursive: true, force: true });
-  await ensureDirectory(itemsDirectoryPath);
+  const config = await loadConfig();
 
-  for (const item of seedItems) {
-    const preparedItem = buildItemWithDefaults(item);
-    await writeJsonFileAtomic(getItemFilePath(item.id), getItemTempFilePath(item.id), preparedItem);
+  const pool = mysql.createPool({
+    host: config.MYSQL_HOST,
+    port: config.MYSQL_PORT,
+    user: config.MYSQL_USER,
+    password: config.MYSQL_PASSWORD,
+    database: config.MYSQL_DB,
+  });
+
+  try {
+    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM items');
+
+    if (total > 0 && !isForceSeed) {
+      console.log('Seed skipped: database is not empty.');
+      return;
+    }
+
+    if (isForceSeed) {
+      await pool.query('TRUNCATE TABLE items');
+    }
+
+    for (const item of seedItems) {
+      await pool.query(
+        'INSERT INTO items (device, status, room, description, image) VALUES (?, ?, ?, ?, ?)',
+        [item.device, item.status, item.room, item.description, item.image],
+      );
+    }
+
+    console.log(`Seed completed. Inserted ${seedItems.length} items.`);
+  } finally {
+    await pool.end();
   }
-
-  console.log(`Seed completed. Created ${seedItems.length} item files.`);
 }
 
 seed().catch((error) => {
