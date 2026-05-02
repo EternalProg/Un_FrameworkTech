@@ -1,18 +1,18 @@
-import { rm } from 'node:fs/promises';
-import { ensureDirectory, writeJsonFileAtomic } from '../utils/file.utils.js';
-import { getItemFilePath, getItemTempFilePath, itemsDirectoryPath } from '../utils/path.utils.js';
+import Fastify from 'fastify';
+import fastifyEnv from '@fastify/env';
+import mongoose from 'mongoose';
+import { ItemModel } from '../../db/models/item.model.js';
 import { buildItemWithDefaults } from '../models/item.model.js';
+import envSchema from '../../schemas/env.schema.js';
 
 const seedItems = [
   {
-    id: 1,
     device: 'Smart Lamp',
     status: 'on',
     room: 'Kitchen',
     description: 'Main kitchen lamp',
   },
   {
-    id: 2,
     device: 'Smart Thermostat',
     status: 'off',
     room: 'Living room',
@@ -20,16 +20,49 @@ const seedItems = [
   },
 ];
 
+const isForceSeed = process.argv.includes('--force');
+
+async function loadConfig() {
+  const bootstrap = Fastify({ logger: false });
+
+  await bootstrap.register(fastifyEnv, {
+    confKey: 'config',
+    schema: envSchema,
+    dotenv: true,
+  });
+
+  await bootstrap.ready();
+  const config = { ...bootstrap.config };
+  await bootstrap.close();
+
+  return config;
+}
+
 async function seed() {
-  await rm(itemsDirectoryPath, { recursive: true, force: true });
-  await ensureDirectory(itemsDirectoryPath);
+  const config = await loadConfig();
 
-  for (const item of seedItems) {
-    const preparedItem = buildItemWithDefaults(item);
-    await writeJsonFileAtomic(getItemFilePath(item.id), getItemTempFilePath(item.id), preparedItem);
+  await mongoose.connect(config.MONGO_URL, {
+    dbName: config.MONGO_DB_NAME,
+    serverSelectionTimeoutMS: 5000,
+  });
+
+  try {
+    const hasData = (await ItemModel.estimatedDocumentCount()) > 0;
+
+    if (hasData && !isForceSeed) {
+      console.log('Seed skipped: database is not empty.');
+      return;
+    }
+
+    if (isForceSeed) {
+      await ItemModel.deleteMany({});
+    }
+
+    await ItemModel.insertMany(seedItems.map((item) => buildItemWithDefaults(item)));
+    console.log(`Seed completed. Inserted ${seedItems.length} items.`);
+  } finally {
+    await mongoose.connection.close();
   }
-
-  console.log(`Seed completed. Created ${seedItems.length} item files.`);
 }
 
 seed().catch((error) => {

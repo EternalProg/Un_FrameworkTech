@@ -20,7 +20,6 @@ import { createDeviceRepository } from '#repositories/device.repository';
 import envSchema from '#schemas/env.schema';
 import { setDeviceRepository } from '#services/device.service';
 import mongoPlugin from './db/mongo.js';
-import { isModelHashChanged } from './src/migrations/check-model-version.js';
 import { createDataBackup } from './src/utils/backup.utils.js';
 import { uploadsDirectoryPath } from './src/utils/path.utils.js';
 
@@ -138,10 +137,6 @@ await fastify.register(registerGitHubV1Routes, { prefix: '/api/v1' });
 await fastify.register(registerV2Routes, { prefix: '/api/v2' });
 
 await createDataBackup();
-
-if (await isModelHashChanged()) {
-  fastify.log.warn('Data schema changed. Run "npm run migrate" to update existing files.');
-}
 
 try {
   await fastify.listen({
