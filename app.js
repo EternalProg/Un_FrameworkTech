@@ -92,6 +92,7 @@ await fastify.register(fastifyRateLimit, {
   global: true,
   max: 100,
   timeWindow: '1 minute',
+  redis: fastify.redis,
 });
 await fastify.register(fastifyMultipart, {
   limits: {
