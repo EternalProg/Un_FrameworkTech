@@ -6,7 +6,6 @@ const backupsDirectoryPath = path.join(dataDirectoryPath, 'backups');
 const cacheDirectoryPath = path.join(dataDirectoryPath, 'cache');
 const referenceCacheFilePath = path.join(cacheDirectoryPath, 'reference.json');
 const uploadsDirectoryPath = path.join(process.cwd(), 'uploads');
-const dataVersionFilePath = path.join(dataDirectoryPath, 'version.json');
 
 function getItemFilePath(id) {
   return path.join(itemsDirectoryPath, `${id}.json`);
@@ -27,7 +26,6 @@ export {
   cacheDirectoryPath,
   referenceCacheFilePath,
   uploadsDirectoryPath,
-  dataVersionFilePath,
   getItemFilePath,
   getItemTempFilePath,
   getUploadDirectoryPath,

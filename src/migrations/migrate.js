@@ -1,55 +1,62 @@
-import { readdir } from 'node:fs/promises';
+import Fastify from 'fastify';
+import fastifyEnv from '@fastify/env';
+import mysql from 'mysql2/promise';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { ItemModel, buildItemWithDefaults } from '../models/item.model.js';
+import envSchema from '../../schemas/env.schema.js';
 import {
-  getCurrentModelHash,
-  getStoredModelHash,
-  updateStoredModelHash,
-} from './model-version.utils.js';
-import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../utils/file.utils.js';
-import { itemsDirectoryPath } from '../utils/path.utils.js';
+  getCurrentSchemaHash,
+  getStoredSchemaHash,
+  updateStoredSchemaHash,
+} from './schema-version.utils.js';
+
+const schemaFilePath = path.join(process.cwd(), 'db', 'schema.sql');
+
+async function loadConfig() {
+  const bootstrap = Fastify({ logger: false });
+
+  await bootstrap.register(fastifyEnv, {
+    confKey: 'config',
+    schema: envSchema,
+    dotenv: true,
+  });
+
+  await bootstrap.ready();
+  const config = { ...bootstrap.config };
+  await bootstrap.close();
+
+  return config;
+}
 
 async function migrate() {
-  await ensureDirectory(itemsDirectoryPath);
+  const config = await loadConfig();
+  const schemaSql = await readFile(schemaFilePath, 'utf-8');
 
-  const currentHash = await getCurrentModelHash();
-  const storedHash = await getStoredModelHash();
+  const pool = mysql.createPool({
+    host: config.MYSQL_HOST,
+    port: config.MYSQL_PORT,
+    user: config.MYSQL_USER,
+    password: config.MYSQL_PASSWORD,
+    database: config.MYSQL_DB,
+    multipleStatements: true,
+  });
 
-  if (!storedHash) {
-    await updateStoredModelHash(currentHash);
-    console.log('Version file created. Migration not required.');
-    return;
+  try {
+    await pool.query(schemaSql);
+
+    const currentHash = await getCurrentSchemaHash();
+    const storedHash = await getStoredSchemaHash(pool);
+
+    if (storedHash === currentHash) {
+      console.log('Migration not required. Schema hash is unchanged.');
+      return;
+    }
+
+    await updateStoredSchemaHash(pool, currentHash);
+    console.log('Migration completed. Schema hash synchronized in migrations table.');
+  } finally {
+    await pool.end();
   }
-
-  if (storedHash === currentHash) {
-    console.log('Migration not required. Model hash is unchanged.');
-    return;
-  }
-
-  const itemEntries = await readdir(itemsDirectoryPath, { withFileTypes: true });
-  const itemFiles = itemEntries.filter((entry) => entry.isFile() && entry.name.endsWith('.json'));
-
-  let migratedCount = 0;
-
-  for (const fileEntry of itemFiles) {
-    const itemFilePath = path.join(itemsDirectoryPath, fileEntry.name);
-    const rawItem = await readJsonFile(itemFilePath);
-
-    const migratedItem = {
-      ...buildItemWithDefaults(rawItem),
-      id: rawItem.id,
-    };
-
-    const tempPath = path.join(itemsDirectoryPath, fileEntry.name.replace('.json', '.tmp.json'));
-    await writeJsonFileAtomic(itemFilePath, tempPath, migratedItem);
-    migratedCount += 1;
-  }
-
-  await updateStoredModelHash(currentHash);
-
-  console.log(
-    `Migration completed. Migrated files: ${migratedCount}. Added defaults: ${Object.keys(ItemModel).join(', ')}`,
-  );
 }
 
 migrate().catch((error) => {

@@ -1,8 +1,8 @@
-import { getCurrentModelHash, getStoredModelHash } from './model-version.utils.js';
+import { getCurrentSchemaHash, getStoredSchemaHash } from './schema-version.utils.js';
 
-async function isModelHashChanged() {
-  const currentHash = await getCurrentModelHash();
-  const storedHash = await getStoredModelHash();
+async function isModelHashChanged(db) {
+  const currentHash = await getCurrentSchemaHash();
+  const storedHash = await getStoredSchemaHash(db);
 
   if (!storedHash) {
     return false;

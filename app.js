@@ -139,7 +139,7 @@ await fastify.register(registerV2Routes, { prefix: '/api/v2' });
 
 await createDataBackup();
 
-if (await isModelHashChanged()) {
+if (await isModelHashChanged(fastify.db)) {
   fastify.log.warn('Data schema changed. Run "npm run migrate" to update existing files.');
 }
 
