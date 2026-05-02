@@ -1,6 +1,14 @@
 const envSchema = {
   type: 'object',
-  required: ['PORT', 'HOSTNAME', 'NODE_ENV', 'ADMIN_API_KEY', 'CORS_ORIGIN'],
+  required: [
+    'PORT',
+    'HOSTNAME',
+    'NODE_ENV',
+    'ADMIN_API_KEY',
+    'CORS_ORIGIN',
+    'MONGO_URL',
+    'MONGO_DB_NAME',
+  ],
   properties: {
     PORT: {
       type: 'integer',
@@ -32,6 +40,16 @@ const envSchema = {
       type: 'string',
       minLength: 1,
       default: 'http://127.0.0.1:3001/deviceTypes',
+    },
+    MONGO_URL: {
+      type: 'string',
+      minLength: 1,
+      default: 'mongodb://127.0.0.1:27017',
+    },
+    MONGO_DB_NAME: {
+      type: 'string',
+      minLength: 1,
+      default: 'framework_tech_labs',
     },
     GITHUB_TOKEN: {
       type: 'string',
