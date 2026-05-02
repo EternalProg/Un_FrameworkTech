@@ -17,6 +17,7 @@ import { registerGitHubV1Routes } from '#routes/github.routes';
 import { registerHealthRoutes } from '#routes/health.routes';
 import { registerV2Routes } from '#routes/v2.routes';
 import envSchema from '#schemas/env.schema';
+import mongoPlugin from './db/mongo.js';
 import { isModelHashChanged } from './src/migrations/check-model-version.js';
 import { createDataBackup } from './src/utils/backup.utils.js';
 import { uploadsDirectoryPath } from './src/utils/path.utils.js';
@@ -99,6 +100,7 @@ await fastify.register(fastifyCors, {
 });
 await fastify.register(fastifyHelmet, { global: true });
 await fastify.register(fastifyWebsocket);
+await fastify.register(mongoPlugin);
 await fastify.register(fastifyStatic, {
   root: uploadsDirectoryPath,
   prefix: '/uploads/',
