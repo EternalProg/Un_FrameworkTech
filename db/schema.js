@@ -9,4 +9,10 @@ const itemsTable = mysqlTable('items', {
   image: varchar('image', { length: 1024 }),
 });
 
-export { itemsTable };
+const usersTable = mysqlTable('users', {
+  id: int('id').autoincrement().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  password: varchar('password', { length: 255 }).notNull(),
+});
+
+export { itemsTable, usersTable };
