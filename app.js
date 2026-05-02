@@ -19,6 +19,7 @@ import { registerV2Routes } from '#routes/v2.routes';
 import { createDeviceRepository } from '#repositories/device.repository';
 import envSchema from '#schemas/env.schema';
 import { setDeviceRepository } from '#services/device.service';
+import { setItemDetailsDependencies } from '#services/item-details.service';
 import drizzlePlugin from './db/drizzle.js';
 import mysqlPlugin from './db/mysql.js';
 import redisPlugin from './db/redis.js';
@@ -107,6 +108,7 @@ await fastify.register(fastifyWebsocket);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
 setDeviceRepository(createDeviceRepository(fastify.db));
+setItemDetailsDependencies({ redis: fastify.redis });
 await fastify.register(fastifyStatic, {
   root: uploadsDirectoryPath,
   prefix: '/uploads/',

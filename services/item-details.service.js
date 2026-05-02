@@ -2,6 +2,16 @@ import { findDeviceById } from '#services/device.service';
 import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../src/utils/file.utils.js';
 import { cacheDirectoryPath, referenceCacheFilePath } from '../src/utils/path.utils.js';
 
+let redisClient = null;
+
+function setItemDetailsDependencies({ redis }) {
+  redisClient = redis;
+}
+
+function getRedisClient() {
+  return redisClient;
+}
+
 const CACHE_TTL_MS = 120 * 1000;
 const MAX_RETRIES = 3;
 const RETRY_DELAYS_MS = [1000, 2000, 4000];
@@ -93,6 +103,7 @@ function mapExternalData(item, references) {
 }
 
 async function getItemDetails(id, externalApiUrl) {
+  getRedisClient();
   const item = await findDeviceById(id);
   if (!item) {
     return null;
@@ -115,4 +126,4 @@ async function getItemDetails(id, externalApiUrl) {
   };
 }
 
-export { getItemDetails };
+export { getItemDetails, setItemDetailsDependencies };
