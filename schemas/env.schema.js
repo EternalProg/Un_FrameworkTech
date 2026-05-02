@@ -11,6 +11,8 @@ const envSchema = {
     'MYSQL_USER',
     'MYSQL_PASSWORD',
     'MYSQL_DB',
+    'REDIS_HOST',
+    'REDIS_PORT',
   ],
   properties: {
     PORT: {
@@ -68,6 +70,17 @@ const envSchema = {
       type: 'string',
       minLength: 1,
       default: 'framework_tech_labs',
+    },
+    REDIS_HOST: {
+      type: 'string',
+      minLength: 1,
+      default: '127.0.0.1',
+    },
+    REDIS_PORT: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 65535,
+      default: 6379,
     },
     GITHUB_TOKEN: {
       type: 'string',

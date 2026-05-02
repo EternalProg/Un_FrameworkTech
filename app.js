@@ -21,6 +21,7 @@ import envSchema from '#schemas/env.schema';
 import { setDeviceRepository } from '#services/device.service';
 import drizzlePlugin from './db/drizzle.js';
 import mysqlPlugin from './db/mysql.js';
+import redisPlugin from './db/redis.js';
 import { createDataBackup } from './src/utils/backup.utils.js';
 import { uploadsDirectoryPath } from './src/utils/path.utils.js';
 
@@ -73,6 +74,7 @@ const fastify = Fastify({
 fastify.decorate('config', config);
 
 await fastify.register(fastifySensible);
+await fastify.register(redisPlugin);
 await fastify.register(fastifySwagger, {
   openapi: {
     info: {
