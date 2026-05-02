@@ -1,4 +1,4 @@
-import { findById } from '#repositories/device.repository';
+import { findDeviceById } from '#services/device.service';
 import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../src/utils/file.utils.js';
 import { cacheDirectoryPath, referenceCacheFilePath } from '../src/utils/path.utils.js';
 
@@ -93,7 +93,7 @@ function mapExternalData(item, references) {
 }
 
 async function getItemDetails(id, externalApiUrl) {
-  const item = await findById(id);
+  const item = await findDeviceById(id);
   if (!item) {
     return null;
   }

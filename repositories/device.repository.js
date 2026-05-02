@@ -1,118 +1,109 @@
-import { readdir, unlink } from 'node:fs/promises';
-import path from 'node:path';
 import { Readable } from 'node:stream';
 import { buildItemWithDefaults } from '../src/models/item.model.js';
-import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../src/utils/file.utils.js';
-import {
-  getItemFilePath,
-  getItemTempFilePath,
-  itemsDirectoryPath,
-  uploadsDirectoryPath,
-} from '../src/utils/path.utils.js';
+import { ensureDirectory } from '../src/utils/file.utils.js';
+import { uploadsDirectoryPath } from '../src/utils/path.utils.js';
 
-async function listItemFiles() {
-  await ensureDirectory(itemsDirectoryPath);
-  const entries = await readdir(itemsDirectoryPath, { withFileTypes: true });
+const STREAM_PAGE_SIZE = 100;
+const UPDATABLE_FIELDS = ['device', 'status', 'room', 'description', 'image'];
 
-  return entries
-    .filter(
-      (entry) =>
-        entry.isFile() && entry.name.endsWith('.json') && !entry.name.endsWith('.tmp.json'),
-    )
-    .sort((left, right) => Number.parseInt(left.name, 10) - Number.parseInt(right.name, 10))
-    .map((entry) => path.join(itemsDirectoryPath, entry.name));
-}
+function createDeviceRepository(db) {
+  async function findAll() {
+    const [rows] = await db.query(
+      'SELECT id, device, status, room, description, image FROM items ORDER BY id ASC',
+    );
 
-function streamAll() {
-  return Readable.from(
-    (async function* readAllItems() {
-      const filePaths = await listItemFiles();
+    return rows;
+  }
 
-      for (const filePath of filePaths) {
-        yield await readJsonFile(filePath);
-      }
-    })(),
-    { objectMode: true },
-  );
-}
+  async function findById(id) {
+    const [rows] = await db.query(
+      'SELECT id, device, status, room, description, image FROM items WHERE id = ? LIMIT 1',
+      [id],
+    );
 
-async function findAll() {
-  const filePaths = await listItemFiles();
-  const items = await Promise.all(filePaths.map((filePath) => readJsonFile(filePath)));
+    return rows[0] ?? null;
+  }
 
-  return items.sort((left, right) => left.id - right.id);
-}
+  async function create(data) {
+    const item = buildItemWithDefaults(data);
 
-async function findById(id) {
-  try {
-    return await readJsonFile(getItemFilePath(id));
-  } catch (error) {
-    if (error.code === 'ENOENT') {
+    const [result] = await db.query(
+      'INSERT INTO items (device, status, room, description, image) VALUES (?, ?, ?, ?, ?)',
+      [item.device, item.status, item.room, item.description, item.image],
+    );
+
+    return findById(result.insertId);
+  }
+
+  async function update(id, data) {
+    const fields = UPDATABLE_FIELDS.filter((field) => field in data);
+
+    if (!fields.length) {
+      return findById(id);
+    }
+
+    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const values = fields.map((field) => data[field]);
+
+    const [result] = await db.query(`UPDATE items SET ${setClause} WHERE id = ?`, [...values, id]);
+
+    if (result.affectedRows === 0) {
       return null;
     }
 
-    throw error;
-  }
-}
-
-async function getNextId() {
-  const items = await findAll();
-  if (!items.length) {
-    return 1;
+    return findById(id);
   }
 
-  return Math.max(...items.map((item) => item.id)) + 1;
-}
+  async function remove(id) {
+    const [result] = await db.query('DELETE FROM items WHERE id = ?', [id]);
+    return result.affectedRows > 0;
+  }
 
-async function create(data) {
-  const id = await getNextId();
-  const item = {
-    ...buildItemWithDefaults(data),
-    id,
+  async function removeAll() {
+    await db.query('DELETE FROM items');
+  }
+
+  function streamAll() {
+    return Readable.from(
+      (async function* readAllItems() {
+        let offset = 0;
+
+        while (true) {
+          const [rows] = await db.query(
+            'SELECT id, device, status, room, description, image FROM items ORDER BY id ASC LIMIT ? OFFSET ?',
+            [STREAM_PAGE_SIZE, offset],
+          );
+
+          if (!rows.length) {
+            break;
+          }
+
+          for (const row of rows) {
+            yield row;
+          }
+
+          offset += rows.length;
+        }
+      })(),
+      { objectMode: true },
+    );
+  }
+
+  async function getUploadsRootPath() {
+    await ensureDirectory(uploadsDirectoryPath);
+    return uploadsDirectoryPath;
+  }
+
+  return {
+    findAll,
+    findById,
+    create,
+    update,
+    remove,
+    removeAll,
+    streamAll,
+    getUploadsRootPath,
   };
-
-  await writeJsonFileAtomic(getItemFilePath(id), getItemTempFilePath(id), item);
-  return item;
 }
 
-async function update(id, data) {
-  const existingItem = await findById(id);
-  if (!existingItem) {
-    return null;
-  }
-
-  const updatedItem = {
-    ...existingItem,
-    ...data,
-    id,
-  };
-
-  await writeJsonFileAtomic(getItemFilePath(id), getItemTempFilePath(id), updatedItem);
-  return updatedItem;
-}
-
-async function remove(id) {
-  try {
-    await unlink(getItemFilePath(id));
-    return true;
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-async function removeAll() {
-  await ensureDirectory(itemsDirectoryPath);
-  const filePaths = await listItemFiles();
-  await Promise.all(filePaths.map((filePath) => unlink(filePath)));
-}
-
-async function getUploadsRootPath() {
-  await ensureDirectory(uploadsDirectoryPath);
-  return uploadsDirectoryPath;
-}
-
-export { findAll, findById, create, update, remove, removeAll, streamAll, getUploadsRootPath };
+export { createDeviceRepository };
