@@ -3,8 +3,6 @@ import path from 'node:path';
 const dataDirectoryPath = path.join(process.cwd(), 'data');
 const itemsDirectoryPath = path.join(dataDirectoryPath, 'items');
 const backupsDirectoryPath = path.join(dataDirectoryPath, 'backups');
-const cacheDirectoryPath = path.join(dataDirectoryPath, 'cache');
-const referenceCacheFilePath = path.join(cacheDirectoryPath, 'reference.json');
 const uploadsDirectoryPath = path.join(process.cwd(), 'uploads');
 
 function getItemFilePath(id) {
@@ -23,8 +21,6 @@ export {
   dataDirectoryPath,
   itemsDirectoryPath,
   backupsDirectoryPath,
-  cacheDirectoryPath,
-  referenceCacheFilePath,
   uploadsDirectoryPath,
   getItemFilePath,
   getItemTempFilePath,

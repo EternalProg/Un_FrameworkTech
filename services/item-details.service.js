@@ -1,6 +1,5 @@
 import { findDeviceById } from '#services/device.service';
-import { ensureDirectory, readJsonFile, writeJsonFileAtomic } from '../src/utils/file.utils.js';
-import { cacheDirectoryPath, referenceCacheFilePath } from '../src/utils/path.utils.js';
+import { REDIS_KEYS } from '#constants/redis-keys';
 
 let redisClient = null;
 
@@ -9,10 +8,14 @@ function setItemDetailsDependencies({ redis }) {
 }
 
 function getRedisClient() {
+  if (!redisClient) {
+    throw new Error('Redis client is not configured');
+  }
+
   return redisClient;
 }
 
-const CACHE_TTL_MS = 120 * 1000;
+const CACHE_TTL_SECONDS = 120;
 const MAX_RETRIES = 3;
 const RETRY_DELAYS_MS = [1000, 2000, 4000];
 const FETCH_TIMEOUT_MS = 5000;
@@ -56,30 +59,22 @@ async function fetchReferenceWithRetry(url) {
 }
 
 async function readReferenceCache() {
-  try {
-    const cache = await readJsonFile(referenceCacheFilePath);
-    const ageMs = Date.now() - new Date(cache.cachedAt).getTime();
+  const payload = await getRedisClient().get(REDIS_KEYS.EXTERNAL_REFERENCE);
 
-    if (Number.isFinite(ageMs) && ageMs < CACHE_TTL_MS) {
-      return cache.data;
-    }
-
+  if (!payload) {
     return null;
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return null;
-    }
-
-    throw error;
   }
+
+  return JSON.parse(payload);
 }
 
 async function writeReferenceCache(data) {
-  await ensureDirectory(cacheDirectoryPath);
-  await writeJsonFileAtomic(referenceCacheFilePath, `${referenceCacheFilePath}.tmp`, {
-    cachedAt: new Date().toISOString(),
-    data,
-  });
+  await getRedisClient().set(
+    REDIS_KEYS.EXTERNAL_REFERENCE,
+    JSON.stringify(data),
+    'EX',
+    CACHE_TTL_SECONDS,
+  );
 }
 
 function mapExternalData(item, references) {
@@ -103,7 +98,6 @@ function mapExternalData(item, references) {
 }
 
 async function getItemDetails(id, externalApiUrl) {
-  getRedisClient();
   const item = await findDeviceById(id);
   if (!item) {
     return null;
