@@ -8,6 +8,14 @@ import { uploadsDirectoryPath } from '../src/utils/path.utils.js';
 const STREAM_PAGE_SIZE = 100;
 const UPDATABLE_FIELDS = ['device', 'status', 'room', 'description', 'image'];
 
+function extractResultHeader(result) {
+  if (Array.isArray(result)) {
+    return result[0] ?? null;
+  }
+
+  return result;
+}
+
 function createDeviceRepository(db) {
   async function findAll() {
     return db.select().from(itemsTable).orderBy(asc(itemsTable.id));
@@ -28,8 +36,9 @@ function createDeviceRepository(db) {
       description: item.description,
       image: item.image,
     });
+    const header = extractResultHeader(result);
 
-    return findById(result[0].insertId);
+    return findById(header.insertId);
   }
 
   async function update(id, data) {
@@ -42,8 +51,9 @@ function createDeviceRepository(db) {
     const values = Object.fromEntries(fields.map((field) => [field, data[field]]));
 
     const result = await db.update(itemsTable).set(values).where(eq(itemsTable.id, id));
+    const header = extractResultHeader(result);
 
-    if (result.affectedRows === 0) {
+    if (!header || header.affectedRows === 0) {
       return null;
     }
 
@@ -52,7 +62,8 @@ function createDeviceRepository(db) {
 
   async function remove(id) {
     const result = await db.delete(itemsTable).where(eq(itemsTable.id, id));
-    return result.affectedRows > 0;
+    const header = extractResultHeader(result);
+    return Boolean(header && header.affectedRows > 0);
   }
 
   async function removeAll() {
