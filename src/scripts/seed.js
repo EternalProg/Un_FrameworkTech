@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import fastifyEnv from '@fastify/env';
 import mysql from 'mysql2/promise';
+import { count } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/mysql2';
+import { itemsTable } from '../../db/schema.js';
 import envSchema from '../../schemas/env.schema.js';
 
 const seedItems = [
@@ -48,9 +51,10 @@ async function seed() {
     password: config.MYSQL_PASSWORD,
     database: config.MYSQL_DB,
   });
+  const db = drizzle(pool);
 
   try {
-    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM items');
+    const [{ total }] = await db.select({ total: count() }).from(itemsTable);
 
     if (total > 0 && !isForceSeed) {
       console.log('Seed skipped: database is not empty.');
@@ -58,14 +62,11 @@ async function seed() {
     }
 
     if (isForceSeed) {
-      await pool.query('TRUNCATE TABLE items');
+      await db.delete(itemsTable);
     }
 
     for (const item of seedItems) {
-      await pool.query(
-        'INSERT INTO items (device, status, room, description, image) VALUES (?, ?, ?, ?, ?)',
-        [item.device, item.status, item.room, item.description, item.image],
-      );
+      await db.insert(itemsTable).values(item);
     }
 
     console.log(`Seed completed. Inserted ${seedItems.length} items.`);
