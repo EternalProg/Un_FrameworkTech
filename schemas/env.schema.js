@@ -13,6 +13,7 @@ const envSchema = {
     'MYSQL_DB',
     'REDIS_HOST',
     'REDIS_PORT',
+    'JWT_SECRET',
   ],
   properties: {
     PORT: {
@@ -81,6 +82,11 @@ const envSchema = {
       minimum: 1,
       maximum: 65535,
       default: 6379,
+    },
+    JWT_SECRET: {
+      type: 'string',
+      minLength: 16,
+      default: 'change-this-jwt-secret',
     },
     GITHUB_TOKEN: {
       type: 'string',

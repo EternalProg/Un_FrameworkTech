@@ -1,15 +1,18 @@
 import Fastify from 'fastify';
+import fastifyCookie from '@fastify/cookie';
 import fastifyCors from '@fastify/cors';
 import fastifyEnv from '@fastify/env';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyJwt from '@fastify/jwt';
 import fastifySensible from '@fastify/sensible';
 import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import fastifyWebsocket from '@fastify/websocket';
 import { ERROR_MESSAGES } from '#constants/error-messages';
+import { buildJwtBlacklistKey } from '#constants/redis-keys';
 import { errorHandler } from '#controllers/error.controller';
 import { registerDeviceRoutes } from '#routes/device.routes';
 import { registerErrorRoutes } from '#routes/error.routes';
@@ -76,6 +79,20 @@ fastify.decorate('config', config);
 
 await fastify.register(fastifySensible);
 await fastify.register(redisPlugin);
+await fastify.register(fastifyCookie);
+await fastify.register(fastifyJwt, {
+  secret: fastify.config.JWT_SECRET,
+  trusted: async (_request, decodedToken) => {
+    const jti = decodedToken.jti;
+
+    if (!jti) {
+      return false;
+    }
+
+    const isBlacklisted = await fastify.redis.get(buildJwtBlacklistKey(jti));
+    return !isBlacklisted;
+  },
+});
 await fastify.register(fastifySwagger, {
   openapi: {
     info: {
