@@ -1,4 +1,6 @@
 import { Readable } from 'node:stream';
+import { asc, eq } from 'drizzle-orm';
+import { itemsTable } from '../db/schema.js';
 import { buildItemWithDefaults } from '../src/models/item.model.js';
 import { ensureDirectory } from '../src/utils/file.utils.js';
 import { uploadsDirectoryPath } from '../src/utils/path.utils.js';
@@ -8,31 +10,26 @@ const UPDATABLE_FIELDS = ['device', 'status', 'room', 'description', 'image'];
 
 function createDeviceRepository(db) {
   async function findAll() {
-    const [rows] = await db.query(
-      'SELECT id, device, status, room, description, image FROM items ORDER BY id ASC',
-    );
-
-    return rows;
+    return db.select().from(itemsTable).orderBy(asc(itemsTable.id));
   }
 
   async function findById(id) {
-    const [rows] = await db.query(
-      'SELECT id, device, status, room, description, image FROM items WHERE id = ? LIMIT 1',
-      [id],
-    );
-
+    const rows = await db.select().from(itemsTable).where(eq(itemsTable.id, id)).limit(1);
     return rows[0] ?? null;
   }
 
   async function create(data) {
     const item = buildItemWithDefaults(data);
 
-    const [result] = await db.query(
-      'INSERT INTO items (device, status, room, description, image) VALUES (?, ?, ?, ?, ?)',
-      [item.device, item.status, item.room, item.description, item.image],
-    );
+    const result = await db.insert(itemsTable).values({
+      device: item.device,
+      status: item.status,
+      room: item.room,
+      description: item.description,
+      image: item.image,
+    });
 
-    return findById(result.insertId);
+    return findById(result[0].insertId);
   }
 
   async function update(id, data) {
@@ -42,10 +39,9 @@ function createDeviceRepository(db) {
       return findById(id);
     }
 
-    const setClause = fields.map((field) => `${field} = ?`).join(', ');
-    const values = fields.map((field) => data[field]);
+    const values = Object.fromEntries(fields.map((field) => [field, data[field]]));
 
-    const [result] = await db.query(`UPDATE items SET ${setClause} WHERE id = ?`, [...values, id]);
+    const result = await db.update(itemsTable).set(values).where(eq(itemsTable.id, id));
 
     if (result.affectedRows === 0) {
       return null;
@@ -55,12 +51,12 @@ function createDeviceRepository(db) {
   }
 
   async function remove(id) {
-    const [result] = await db.query('DELETE FROM items WHERE id = ?', [id]);
+    const result = await db.delete(itemsTable).where(eq(itemsTable.id, id));
     return result.affectedRows > 0;
   }
 
   async function removeAll() {
-    await db.query('DELETE FROM items');
+    await db.delete(itemsTable);
   }
 
   function streamAll() {
@@ -69,10 +65,12 @@ function createDeviceRepository(db) {
         let offset = 0;
 
         while (true) {
-          const [rows] = await db.query(
-            'SELECT id, device, status, room, description, image FROM items ORDER BY id ASC LIMIT ? OFFSET ?',
-            [STREAM_PAGE_SIZE, offset],
-          );
+          const rows = await db
+            .select()
+            .from(itemsTable)
+            .orderBy(asc(itemsTable.id))
+            .limit(STREAM_PAGE_SIZE)
+            .offset(offset);
 
           if (!rows.length) {
             break;

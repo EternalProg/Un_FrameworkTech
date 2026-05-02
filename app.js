@@ -104,7 +104,7 @@ await fastify.register(fastifyHelmet, { global: true });
 await fastify.register(fastifyWebsocket);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
-setDeviceRepository(createDeviceRepository(fastify.db));
+setDeviceRepository(createDeviceRepository(fastify.drizzle));
 await fastify.register(fastifyStatic, {
   root: uploadsDirectoryPath,
   prefix: '/uploads/',
