@@ -29,7 +29,7 @@ const envSchema = {
     },
     NODE_ENV: {
       type: 'string',
-      enum: ['development', 'production'],
+      enum: ['development', 'production', 'test'],
       default: 'development',
     },
     ADMIN_API_KEY: {
