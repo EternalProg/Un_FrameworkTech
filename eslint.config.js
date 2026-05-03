@@ -1,7 +1,7 @@
 export default [
   {
     files: ['**/*.js'],
-    ignores: ['**/node_modules/**'],
+    ignores: ['**/node_modules/**', '**/coverage/**'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -26,6 +26,24 @@ export default [
           message: 'Use fastify.config from @fastify/env instead of process.env',
         },
       ],
+    },
+  },
+  {
+    files: ['tests/**/*.js'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        vi: 'readonly',
+      },
+    },
+    rules: {
+      'no-restricted-properties': 'off',
     },
   },
 ];
