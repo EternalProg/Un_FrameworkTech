@@ -1,5 +1,6 @@
 .env
 node_modules/
+coverage/
 uploads/
 data/backups/
 data/items/*.tmp.json

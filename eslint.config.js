@@ -1,7 +1,9 @@
 export default [
   {
-    files: ['**/*.js'],
     ignores: ['**/node_modules/**', '**/coverage/**'],
+  },
+  {
+    files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
