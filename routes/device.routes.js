@@ -35,6 +35,14 @@ async function requireAdminApiKey(request, reply) {
   }
 }
 
+async function requireJwtAccessToken(request, reply) {
+  await request.jwtVerify();
+
+  if (request.user.type !== 'access') {
+    return reply.unauthorized('Invalid access token');
+  }
+}
+
 async function registerDeviceRoutes(fastify) {
   const sockets = new Set();
 
@@ -74,9 +82,19 @@ async function registerDeviceRoutes(fastify) {
   fastify.delete('/devices/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
 
   fastify.get('/items', { schema: listDevicesRouteSchema }, listDevices);
-  fastify.post('/items', { schema: createDeviceRouteSchema }, createDevice);
-  fastify.patch('/items/:id', { schema: updateDeviceRouteSchema }, updateDevice);
-  fastify.delete('/items/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
+  fastify.register(async function registerProtectedItemRoutes(protectedRoutes) {
+    protectedRoutes.addHook('onRequest', requireJwtAccessToken);
+
+    protectedRoutes.post('/items', { schema: createDeviceRouteSchema }, createDevice);
+    protectedRoutes.patch('/items/:id', { schema: updateDeviceRouteSchema }, updateDevice);
+    protectedRoutes.delete('/items/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
+    protectedRoutes.post('/items/import', { schema: importItemsRouteSchema }, importItems);
+    protectedRoutes.post(
+      '/items/:id/image',
+      { schema: uploadItemImageRouteSchema },
+      uploadItemImage,
+    );
+  });
 
   fastify.get('/items/export', { schema: exportItemsRouteSchema }, exportItems);
   fastify.get('/items/stream', { schema: streamItemsRouteSchema }, streamItems);
@@ -95,9 +113,7 @@ async function registerDeviceRoutes(fastify) {
       sockets.delete(socket);
     });
   });
-  fastify.post('/items/import', { schema: importItemsRouteSchema }, importItems);
   fastify.get('/items/:id/details', { schema: itemDetailsRouteSchema }, getItemExtendedDetails);
-  fastify.post('/items/:id/image', { schema: uploadItemImageRouteSchema }, uploadItemImage);
   fastify.get(
     '/backups/:timestamp',
     {
