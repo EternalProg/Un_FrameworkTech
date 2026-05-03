@@ -103,6 +103,16 @@ await fastify.register(fastifySwagger, {
       description: 'Fastify lab API documentation',
       version: '1.0.0',
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Authorization header format: Bearer <token>',
+        },
+      },
+    },
   },
 });
 await fastify.register(fastifySwaggerUi, {
