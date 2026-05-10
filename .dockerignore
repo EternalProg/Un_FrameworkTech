@@ -1,0 +1,13 @@
+node_modules
+coverage
+tests
+.git
+.github
+.vscode
+.idea
+
+*.log
+*.tmp
+
+session.cookies
+jwt.cookies
