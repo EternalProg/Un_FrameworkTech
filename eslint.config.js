@@ -48,4 +48,10 @@ export default [
       'no-restricted-properties': 'off',
     },
   },
+  {
+    files: ['drizzle.config.js'],
+    rules: {
+      'no-restricted-properties': 'off',
+    },
+  },
 ];

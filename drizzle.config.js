@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 function loadDotEnv(filePath) {
   const fileContent = readFileSync(filePath, 'utf-8');
@@ -26,7 +26,9 @@ function loadDotEnv(filePath) {
   return env;
 }
 
-const env = loadDotEnv('.env');
+const fileEnv = existsSync('.env') ? loadDotEnv('.env') : {};
+// Prefer real environment variables (e.g. Docker/CI) over values from .env file.
+const env = { ...fileEnv, ...process.env };
 
 export default {
   out: './drizzle',
