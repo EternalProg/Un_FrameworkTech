@@ -1,0 +1,64 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: framework_tech_labs
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-proot']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    ports:
+      - '3306:3306'
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    ports:
+      - '6379:6379'
+
+  app:
+    build:
+      context: .
+      target: prod
+    environment:
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      ADMIN_API_KEY: change-me-please
+      CORS_ORIGIN: '*'
+      EXTERNAL_API_URL: http://127.0.0.1:3001/deviceTypes
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DB: framework_tech_labs
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: change-this-jwt-secret
+      GITHUB_TOKEN: ''
+      GITHUB_ANALYTICS_MAX_CONTRIBUTORS: 0
+      GITHUB_ANALYTICS_MAX_EVENTS: 0
+      GITHUB_ANALYTICS_MAX_CANDIDATES: 0
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    command: ['sh', '-c', 'npm run db:migrate && npm run seed && node app.js']
+
+volumes:
+  mysql-data:
+  redis-data:
