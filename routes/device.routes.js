@@ -85,13 +85,31 @@ async function registerDeviceRoutes(fastify) {
   fastify.register(async function registerProtectedItemRoutes(protectedRoutes) {
     protectedRoutes.addHook('onRequest', requireJwtAccessToken);
 
-    protectedRoutes.post('/items', { schema: createDeviceRouteSchema }, createDevice);
-    protectedRoutes.patch('/items/:id', { schema: updateDeviceRouteSchema }, updateDevice);
-    protectedRoutes.delete('/items/:id', { schema: deleteDeviceRouteSchema }, deleteDevice);
-    protectedRoutes.post('/items/import', { schema: importItemsRouteSchema }, importItems);
+    const jwtSecurity = [{ bearerAuth: [] }];
+
+    protectedRoutes.post(
+      '/items',
+      { schema: { ...createDeviceRouteSchema, security: jwtSecurity } },
+      createDevice,
+    );
+    protectedRoutes.patch(
+      '/items/:id',
+      { schema: { ...updateDeviceRouteSchema, security: jwtSecurity } },
+      updateDevice,
+    );
+    protectedRoutes.delete(
+      '/items/:id',
+      { schema: { ...deleteDeviceRouteSchema, security: jwtSecurity } },
+      deleteDevice,
+    );
+    protectedRoutes.post(
+      '/items/import',
+      { schema: { ...importItemsRouteSchema, security: jwtSecurity } },
+      importItems,
+    );
     protectedRoutes.post(
       '/items/:id/image',
-      { schema: uploadItemImageRouteSchema },
+      { schema: { ...uploadItemImageRouteSchema, security: jwtSecurity } },
       uploadItemImage,
     );
   });
